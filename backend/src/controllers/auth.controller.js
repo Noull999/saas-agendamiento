@@ -23,7 +23,7 @@ function generateToken(business) {
 }
 
 const register = (req, res) => {
-  const { name, owner_email, password, phone } = req.body;
+  const { name, owner_email, password, phone, specialty } = req.body;
 
   if (!name || !owner_email || !password) {
     return res.status(400).json({ error: 'nombre, email y contraseña son requeridos' });
@@ -54,9 +54,9 @@ const register = (req, res) => {
   if (slugExists) slug = `${slug}-${Date.now()}`;
 
   const result = db.prepare(`
-    INSERT INTO businesses (slug, name, owner_email, password_hash, phone, plan)
-    VALUES (?, ?, ?, ?, ?, 'basic')
-  `).run(slug, name.trim(), owner_email.toLowerCase(), password_hash, phone?.trim() || null);
+    INSERT INTO businesses (slug, name, owner_email, password_hash, phone, plan, specialty)
+    VALUES (?, ?, ?, ?, ?, 'basic', ?)
+  `).run(slug, name.trim(), owner_email.toLowerCase(), password_hash, phone?.trim() || null, specialty || 'general');
 
   const business = db.prepare('SELECT * FROM businesses WHERE id = ?').get(result.lastInsertRowid);
   const token = generateToken(business);

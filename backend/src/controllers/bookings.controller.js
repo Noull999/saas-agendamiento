@@ -7,9 +7,10 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const list = (req, res) => {
   const { date, status } = req.query;
   let query = `
-    SELECT b.*, s.name as service_name, s.duration_min
+    SELECT b.*, s.name as service_name, s.duration_min, p.name as patient_name, p.rut as patient_rut
     FROM bookings b
     LEFT JOIN services s ON b.service_id = s.id
+    LEFT JOIN patients p ON b.patient_id = p.id
     WHERE b.business_id = ?
   `;
   const params = [req.business.id];
@@ -97,7 +98,7 @@ const publicCreate = (req, res) => {
   const business = db.prepare('SELECT * FROM businesses WHERE slug = ?').get(slug);
   if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
 
-  const { client_name, client_email, client_phone, service_id, datetime_iso, notes } = req.body;
+  const { client_name, client_email, client_phone, client_rut, service_id, datetime_iso, notes } = req.body;
   if (!client_name || !datetime_iso) {
     return res.status(400).json({ error: 'client_name y datetime_iso son requeridos' });
   }
@@ -108,9 +109,9 @@ const publicCreate = (req, res) => {
   }
 
   const result = db.prepare(`
-    INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'web')
-  `).run(business.id, service_id || null, client_name, client_email || null, client_phone || null, datetime_iso, notes || null);
+    INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'web', ?)
+  `).run(business.id, service_id || null, client_name, client_email || null, client_phone || null, datetime_iso, notes || null, client_rut || null);
 
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
 
@@ -130,4 +131,14 @@ const publicCreate = (req, res) => {
   res.status(201).json({ ok: true, booking_id: booking.id, datetime_iso: booking.datetime_iso });
 };
 
-module.exports = { list, create, updateStatus, remove, publicCreate };
+const updateBooking = (req, res) => {
+  const booking = db.prepare('SELECT id FROM bookings WHERE id = ? AND business_id = ?').get(req.params.id, req.business.id);
+  if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
+  const { patient_id } = req.body;
+  if (patient_id !== undefined) {
+    db.prepare('UPDATE bookings SET patient_id = ? WHERE id = ?').run(patient_id || null, req.params.id);
+  }
+  res.json(db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id));
+};
+
+module.exports = { list, create, updateStatus, remove, publicCreate, updateBooking };
