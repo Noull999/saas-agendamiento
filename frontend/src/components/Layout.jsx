@@ -1,19 +1,23 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const links = [
-  { to: '/dashboard', label: 'Reservas', icon: '📅' },
-  { to: '/dashboard/servicios', label: 'Servicios', icon: '🛠' },
-  { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
-  { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
-  { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
-];
-
 export default function Layout({ children }) {
   const { business, logout } = useAuth();
   const navigate = useNavigate();
 
+  const isPro = business?.plan === 'pro' || business?.plan === 'clinic';
+
   const handleLogout = () => { logout(); navigate('/login'); };
+
+  const links = [
+    { to: '/dashboard', label: 'Reservas', icon: '📅' },
+    { to: '/dashboard/servicios', label: 'Servicios', icon: '🛠' },
+    { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
+    { to: '/dashboard/pacientes', label: 'Pacientes', icon: '👤' },
+    ...(isPro ? [{ to: '/dashboard/profesionales', label: 'Profesionales', icon: '👥' }] : []),
+    { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
+    { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
+  ];
 
   return (
     <div className="flex min-h-screen bg-slate-50">

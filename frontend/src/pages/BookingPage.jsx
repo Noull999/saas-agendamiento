@@ -16,6 +16,22 @@ function getDatesForNextDays(n = 30) {
   return dates;
 }
 
+function isValidRut(rut) {
+  const cleaned = String(rut).replace(/\./g, '').replace(/-/g, '').trim().toLowerCase();
+  if (cleaned.length < 2) return false;
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+  if (!/^\d+$/.test(body)) return false;
+  let sum = 0, m = 2;
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += parseInt(body[i], 10) * m;
+    m = m === 7 ? 2 : m + 1;
+  }
+  const mod = 11 - (sum % 11);
+  const expected = mod === 11 ? '0' : mod === 10 ? 'k' : String(mod);
+  return dv === expected;
+}
+
 const STEP_LABELS = ['Servicio', 'Fecha', 'Hora', 'Datos'];
 
 function ProgressBar({ step }) {
@@ -52,7 +68,7 @@ export default function BookingPage() {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [form, setForm] = useState({ client_name: '', client_email: '', client_phone: '', notes: '' });
+  const [form, setForm] = useState({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -93,6 +109,7 @@ export default function BookingPage() {
         client_name: form.client_name,
         client_email: form.client_email || undefined,
         client_phone: form.client_phone || undefined,
+        client_rut: form.client_rut || undefined,
         service_id: selectedService?.id,
         datetime_iso,
         notes: form.notes || undefined,
@@ -179,7 +196,7 @@ export default function BookingPage() {
               </p>
             )}
             <button
-              onClick={() => { setStep(1); setSelectedService(null); setSelectedDate(null); setSelectedSlot(null); setForm({ client_name: '', client_email: '', client_phone: '', notes: '' }); }}
+              onClick={() => { setStep(1); setSelectedService(null); setSelectedDate(null); setSelectedSlot(null); setForm({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' }); }}
               className="text-sm text-indigo-600 hover:underline"
             >
               Agendar otra hora
@@ -285,6 +302,24 @@ export default function BookingPage() {
                       placeholder="Tu nombre"
                     />
                   </div>
+                  {business?.specialty && business.specialty !== 'general' && (
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700">
+                        RUT *{' '}
+                        {form.client_rut.length > 2 && (
+                          isValidRut(form.client_rut)
+                            ? <span className="text-emerald-600 font-normal">✓ válido</span>
+                            : <span className="text-red-500 font-normal">inválido</span>
+                        )}
+                      </label>
+                      <input
+                        required value={form.client_rut}
+                        onChange={(e) => setForm({ ...form, client_rut: e.target.value })}
+                        placeholder="ej: 12.345.678-9"
+                        className={inputClass}
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="text-xs font-semibold text-slate-700">Teléfono WhatsApp *</label>
                     <input
@@ -315,7 +350,8 @@ export default function BookingPage() {
                   </div>
                   <button
                     onClick={handleSubmit}
-                    disabled={submitting || !form.client_name || !form.client_phone}
+                    disabled={submitting || !form.client_name || !form.client_phone ||
+                      (business?.specialty && business.specialty !== 'general' && !isValidRut(form.client_rut))}
                     className="w-full bg-indigo-600 text-white rounded-2xl py-3.5 text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors mt-2"
                   >
                     {submitting ? 'Agendando...' : 'Confirmar reserva →'}

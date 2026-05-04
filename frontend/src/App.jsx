@@ -9,6 +9,9 @@ import Schedules from './pages/Schedules';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import BookingPage from './pages/BookingPage';
+import Patients from './pages/Patients';
+import PatientDetail from './pages/PatientDetail';
+import Professionals from './pages/Professionals';
 
 function Protected({ children }) {
   const { business } = useAuth();
@@ -32,6 +35,9 @@ function App() {
           <Route path="/dashboard/horarios" element={<Protected><Layout><Schedules /></Layout></Protected>} />
           <Route path="/dashboard/analytics" element={<Protected><Layout><Analytics /></Layout></Protected>} />
           <Route path="/dashboard/configuracion" element={<Protected><Layout><Settings /></Layout></Protected>} />
+          <Route path="/dashboard/pacientes" element={<Protected><Layout><Patients /></Layout></Protected>} />
+          <Route path="/dashboard/pacientes/:id" element={<Protected><Layout><PatientDetail /></Layout></Protected>} />
+          <Route path="/dashboard/profesionales" element={<Protected><Layout><Professionals /></Layout></Protected>} />
           <Route path="/book/:slug" element={<BookingPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
