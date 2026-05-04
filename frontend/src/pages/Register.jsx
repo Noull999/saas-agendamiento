@@ -2,10 +2,19 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const SPECIALTIES = [
+  { value: 'general', label: 'General / Otro' },
+  { value: 'kinesiologia', label: 'Kinesiología' },
+  { value: 'psicologia', label: 'Psicología' },
+  { value: 'nutricion', label: 'Nutrición' },
+  { value: 'odontologia', label: 'Odontología' },
+  { value: 'medicina', label: 'Medicina General' },
+];
+
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', owner_email: '', password: '', phone: '' });
+  const [form, setForm] = useState({ name: '', owner_email: '', password: '', phone: '', specialty: 'general' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +25,7 @@ export default function Register() {
     setLoading(true);
     setError('');
     try {
-      await register(form.name, form.owner_email, form.password, form.phone);
+      await register(form.name, form.owner_email, form.password, form.phone, form.specialty);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Error al registrarse');
@@ -24,6 +33,8 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  const inputClass = 'w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white';
 
   return (
     <div className="min-h-screen flex">
@@ -54,25 +65,31 @@ export default function Register() {
 
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del negocio</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del negocio o consulta</label>
               <input
                 name="name" required value={form.name} onChange={handle}
-                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-                placeholder="Ej: Barbería El Maestro"
+                className={inputClass}
+                placeholder="Ej: Kinesiología López"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Especialidad</label>
+              <select name="specialty" value={form.specialty} onChange={handle} className={inputClass}>
+                {SPECIALTIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
               <input
                 name="owner_email" type="email" required value={form.owner_email} onChange={handle}
-                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                className={inputClass}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Contraseña</label>
               <input
                 name="password" type="password" required minLength={6} value={form.password} onChange={handle}
-                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                className={inputClass}
               />
             </div>
             <div>
@@ -81,7 +98,7 @@ export default function Register() {
               </label>
               <input
                 name="phone" value={form.phone} onChange={handle}
-                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                className={inputClass}
                 placeholder="+56 9 1234 5678"
               />
             </div>

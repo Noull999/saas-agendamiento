@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
     return data.business;
   };
 
-  const register = async (name, owner_email, password, phone) => {
-    const { data } = await api.post('/auth/register', { name, owner_email, password, phone });
+  const register = async (name, owner_email, password, phone, specialty) => {
+    const { data } = await api.post('/auth/register', { name, owner_email, password, phone, specialty });
     localStorage.setItem('token', data.token);
     localStorage.setItem('business', JSON.stringify(data.business));
     setBusiness(data.business);
