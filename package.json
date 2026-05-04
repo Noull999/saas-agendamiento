@@ -1,0 +1,8 @@
+{
+  "name": "saas-agendamiento",
+  "version": "1.0.0",
+  "scripts": {
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev"
+  }
+}
