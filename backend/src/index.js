@@ -1,4 +1,10 @@
 require('dotenv').config();
+
+if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
+  console.error('[FATAL] ENCRYPTION_KEY no configurada o muy corta (mínimo 32 caracteres)');
+  process.exit(1);
+}
+
 require('./db/database');
 
 const express = require('express');
