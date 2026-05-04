@@ -65,4 +65,57 @@ db.exec(`
   try { db.exec(sql); } catch (_) {}
 });
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS professionals (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    name        TEXT    NOT NULL,
+    specialty   TEXT    NOT NULL,
+    email       TEXT,
+    active      INTEGER NOT NULL DEFAULT 1,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS patients (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id  INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    rut          TEXT    NOT NULL,
+    name         TEXT    NOT NULL,
+    birth_date   TEXT,
+    phone        TEXT,
+    email        TEXT,
+    allergies    TEXT,
+    background   TEXT,
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(business_id, rut)
+  );
+
+  CREATE TABLE IF NOT EXISTS consultations (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id     INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    patient_id      INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    booking_id      INTEGER REFERENCES bookings(id),
+    professional_id INTEGER REFERENCES professionals(id),
+    notes           TEXT,
+    diagnosis       TEXT,
+    treatment       TEXT,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS prescriptions (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    consultation_id INTEGER NOT NULL REFERENCES consultations(id) ON DELETE CASCADE,
+    content         TEXT    NOT NULL,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+[
+  "ALTER TABLE businesses ADD COLUMN specialty TEXT DEFAULT 'general'",
+  "ALTER TABLE bookings ADD COLUMN patient_id INTEGER REFERENCES patients(id)",
+  "ALTER TABLE bookings ADD COLUMN professional_id INTEGER REFERENCES professionals(id)",
+  "ALTER TABLE bookings ADD COLUMN reminded INTEGER DEFAULT 0",
+  "ALTER TABLE bookings ADD COLUMN client_rut TEXT"
+].forEach(sql => { try { db.exec(sql); } catch (_) {} });
+
 module.exports = db;
