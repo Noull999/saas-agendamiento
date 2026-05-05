@@ -8,6 +8,7 @@ if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
 require('./db/database');
 
 const express = require('express');
+const { startReminderJob } = require('./jobs/reminders');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -75,6 +76,8 @@ app.use('/api/patients', require('./routes/patients.routes'));
 app.use('/api/consultations', require('./routes/consultations.routes'));
 app.use('/api/prescriptions', require('./routes/prescriptions.routes'));
 app.use('/api/professionals', require('./routes/professionals.routes'));
+// billing incluye el webhook de Stripe (raw body) y el checkout protegido
+app.use('/api/billing', require('./routes/billing.routes'));
 
 app.get('/health', (_, res) => res.json({ ok: true }));
 
@@ -86,4 +89,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`[API] Servidor corriendo en http://localhost:${PORT}`);
+  startReminderJob();
 });

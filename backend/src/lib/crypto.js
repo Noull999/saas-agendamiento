@@ -21,11 +21,15 @@ function decrypt(text) {
   if (text == null) return null;
   const parts = String(text).split(':');
   if (parts.length !== 2) return null;
-  const iv = Buffer.from(parts[0], 'hex');
-  const encrypted = Buffer.from(parts[1], 'hex');
-  const decipher = createDecipheriv(ALGORITHM, getKey(), iv);
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  return decrypted.toString('utf8');
+  try {
+    const iv        = Buffer.from(parts[0], 'hex');
+    const encrypted = Buffer.from(parts[1], 'hex');
+    const decipher  = createDecipheriv(ALGORITHM, getKey(), iv);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch {
+    return null;
+  }
 }
 
 module.exports = { encrypt, decrypt };
