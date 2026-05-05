@@ -32,6 +32,14 @@ app.use(cors({
   credentials: false,
 }));
 
+// El webhook de Stripe necesita el body en crudo (Buffer), no parseado.
+// Se registra ANTES de express.json() para que no lo intercepte.
+app.post(
+  '/api/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  require('./controllers/billing.controller').webhook
+);
+
 // Limit request body size (prevent DoS via huge payloads)
 app.use(express.json({ limit: '50kb' }));
 
