@@ -1,5 +1,13 @@
 const db = require('../db/database');
 
+const getOne = (req, res) => {
+  const prof = db.prepare(
+    'SELECT * FROM professionals WHERE id = ? AND business_id = ? AND active = 1'
+  ).get(req.params.id, req.business.id);
+  if (!prof) return res.status(404).json({ error: 'Profesional no encontrado' });
+  res.json(prof);
+};
+
 const list = (req, res) => {
   const professionals = db.prepare(
     'SELECT * FROM professionals WHERE business_id = ? AND active = 1 ORDER BY name ASC'
@@ -40,4 +48,4 @@ const remove = (req, res) => {
   res.json({ ok: true });
 };
 
-module.exports = { list, create, update, remove };
+module.exports = { getOne, list, create, update, remove };

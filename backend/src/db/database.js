@@ -11,6 +11,8 @@ if (!fs.existsSync(dbDir)) {
 
 const db = new DatabaseSync(path.resolve(dbPath));
 
+// Forzar UTF-8 (solo aplica en bases de datos nuevas; en existentes es no-op)
+db.exec("PRAGMA encoding = 'UTF-8'");
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 

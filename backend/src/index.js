@@ -44,9 +44,11 @@ app.use(rateLimit({
 }));
 
 // Rate limiting estricto para auth (previene fuerza bruta)
+// En desarrollo se omite para no bloquear el flujo de trabajo
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skip: () => isDev,
   message: { error: 'Demasiados intentos de autenticación, intenta en 15 minutos' },
 });
 
@@ -54,6 +56,7 @@ const authLimiter = rateLimit({
 const bookingLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
+  skip: () => isDev,
   message: { error: 'Demasiadas reservas en poco tiempo, intenta en 1 minuto' },
 });
 
