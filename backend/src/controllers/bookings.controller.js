@@ -6,29 +6,37 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const list = (req, res) => {
   const { date, status } = req.query;
-  let query = `
-    SELECT b.*, s.name as service_name, s.duration_min, p.name as patient_name, p.rut as patient_rut
-    FROM bookings b
-    LEFT JOIN services s ON b.service_id = s.id
-    LEFT JOIN patients p ON b.patient_id = p.id
-    WHERE b.business_id = ?
-  `;
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+  const offset = (page - 1) * limit;
+
+  let where = 'WHERE b.business_id = ?';
   const params = [req.business.id];
 
   if (date) {
     if (!DATE_RE.test(date)) return res.status(400).json({ error: 'formato de fecha inválido (YYYY-MM-DD)' });
-    query += ' AND date(b.datetime_iso) = ?';
+    where += ' AND date(b.datetime_iso) = ?';
     params.push(date);
   }
   if (status) {
     if (!VALID_STATUSES.includes(status)) return res.status(400).json({ error: `status debe ser uno de: ${VALID_STATUSES.join(', ')}` });
-    query += ' AND b.status = ?';
+    where += ' AND b.status = ?';
     params.push(status);
   }
 
-  query += ' ORDER BY b.datetime_iso ASC LIMIT 500';
-  const bookings = db.prepare(query).all(...params);
-  res.json(bookings);
+  const total = db.prepare(`SELECT COUNT(*) as n FROM bookings b ${where}`).get(...params).n;
+
+  const bookings = db.prepare(`
+    SELECT b.*, s.name as service_name, s.duration_min, p.name as patient_name, p.rut as patient_rut
+    FROM bookings b
+    LEFT JOIN services s ON b.service_id = s.id
+    LEFT JOIN patients p ON b.patient_id = p.id
+    ${where}
+    ORDER BY b.datetime_iso ASC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  res.json({ bookings, total, page, pages: Math.ceil(total / limit) });
 };
 
 const create = (req, res) => {
@@ -43,6 +51,11 @@ const create = (req, res) => {
     const service = db.prepare('SELECT id FROM services WHERE id = ? AND business_id = ?').get(service_id, req.business.id);
     if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
   }
+
+  const conflict = db.prepare(
+    "SELECT id FROM bookings WHERE business_id = ? AND datetime_iso = ? AND status != 'cancelled'"
+  ).get(req.business.id, datetime_iso);
+  if (conflict) return res.status(409).json({ error: 'Ese horario ya está reservado' });
 
   const result = db.prepare(`
     INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source)
@@ -107,6 +120,11 @@ const publicCreate = (req, res) => {
     const service = db.prepare('SELECT id FROM services WHERE id = ? AND business_id = ?').get(service_id, business.id);
     if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
   }
+
+  const conflict = db.prepare(
+    "SELECT id FROM bookings WHERE business_id = ? AND datetime_iso = ? AND status != 'cancelled'"
+  ).get(business.id, datetime_iso);
+  if (conflict) return res.status(409).json({ error: 'Ese horario ya no está disponible' });
 
   const result = db.prepare(`
     INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut)

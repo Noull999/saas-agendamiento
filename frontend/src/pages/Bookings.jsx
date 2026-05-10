@@ -48,7 +48,7 @@ export default function Bookings() {
     setLoading(true);
     try {
       const { data } = await api.get('/bookings', { params: { date } });
-      setBookings(data);
+      setBookings(data.bookings ?? data);
     } finally {
       setLoading(false);
     }
