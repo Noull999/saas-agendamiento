@@ -7,7 +7,7 @@ const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','ago
 // Perfil público de un negocio (para la página de reservas)
 router.get('/:slug', (req, res) => {
   const business = db.prepare(
-    'SELECT id, slug, name, phone, specialty FROM businesses WHERE slug = ?'
+    'SELECT id, slug, name, phone, specialty, vertical FROM businesses WHERE slug = ?'
   ).get(req.params.slug);
 
   if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });

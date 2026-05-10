@@ -114,10 +114,14 @@ db.exec(`
 
 [
   "ALTER TABLE businesses ADD COLUMN specialty TEXT DEFAULT 'general'",
+  "ALTER TABLE businesses ADD COLUMN vertical TEXT DEFAULT 'salud'",
   "ALTER TABLE bookings ADD COLUMN patient_id INTEGER REFERENCES patients(id)",
   "ALTER TABLE bookings ADD COLUMN professional_id INTEGER REFERENCES professionals(id)",
   "ALTER TABLE bookings ADD COLUMN reminded INTEGER DEFAULT 0",
-  "ALTER TABLE bookings ADD COLUMN client_rut TEXT"
+  "ALTER TABLE bookings ADD COLUMN client_rut TEXT",
+  "ALTER TABLE patients ADD COLUMN notes TEXT",
+  "ALTER TABLE businesses ADD COLUMN reset_token TEXT",
+  "ALTER TABLE businesses ADD COLUMN reset_token_expires TEXT"
 ].forEach(sql => { try { db.exec(sql); } catch (_) {} });
 
 module.exports = db;

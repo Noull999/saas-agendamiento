@@ -16,14 +16,16 @@ function slugify(name) {
 
 function generateToken(business) {
   return jwt.sign(
-    { id: business.id, email: business.owner_email, slug: business.slug },
+    { id: business.id, email: business.owner_email, slug: business.slug, vertical: business.vertical || 'salud' },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
 }
 
+const VALID_VERTICALS = ['salud', 'belleza'];
+
 const register = (req, res) => {
-  const { name, owner_email, password, phone, specialty } = req.body;
+  const { name, owner_email, password, phone, specialty, vertical } = req.body;
 
   if (!name || !owner_email || !password) {
     return res.status(400).json({ error: 'nombre, email y contraseña son requeridos' });
@@ -46,6 +48,7 @@ const register = (req, res) => {
     return res.status(409).json({ error: 'Email ya registrado' });
   }
 
+  const safeVertical = VALID_VERTICALS.includes(vertical) ? vertical : 'salud';
   const password_hash = bcrypt.hashSync(password, 12);
   let slug = slugify(name.trim());
   if (!slug) slug = `negocio-${Date.now()}`;
@@ -54,16 +57,16 @@ const register = (req, res) => {
   if (slugExists) slug = `${slug}-${Date.now()}`;
 
   const result = db.prepare(`
-    INSERT INTO businesses (slug, name, owner_email, password_hash, phone, plan, specialty)
-    VALUES (?, ?, ?, ?, ?, 'basic', ?)
-  `).run(slug, name.trim(), owner_email.toLowerCase(), password_hash, phone?.trim() || null, specialty || 'general');
+    INSERT INTO businesses (slug, name, owner_email, password_hash, phone, plan, specialty, vertical)
+    VALUES (?, ?, ?, ?, ?, 'basic', ?, ?)
+  `).run(slug, name.trim(), owner_email.toLowerCase(), password_hash, phone?.trim() || null, specialty || 'general', safeVertical);
 
   const business = db.prepare('SELECT * FROM businesses WHERE id = ?').get(result.lastInsertRowid);
   const token = generateToken(business);
 
   res.status(201).json({
     token,
-    business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan }
+    business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan, vertical: business.vertical, specialty: business.specialty }
   });
 };
 
@@ -89,16 +92,87 @@ const login = (req, res) => {
   const token = generateToken(business);
   res.json({
     token,
-    business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan }
+    business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan, vertical: business.vertical || 'salud', specialty: business.specialty || 'general' }
   });
 };
 
 const me = (req, res) => {
   const business = db.prepare(
-    'SELECT id, slug, name, owner_email, phone, plan, created_at FROM businesses WHERE id = ?'
+    'SELECT id, slug, name, owner_email, phone, plan, vertical, specialty, created_at FROM businesses WHERE id = ?'
   ).get(req.business.id);
   if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
   res.json(business);
 };
 
-module.exports = { register, login, me };
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+function getMailer() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+}
+
+const forgotPassword = async (req, res) => {
+  const { owner_email } = req.body;
+  if (!owner_email || !EMAIL_RE.test(owner_email)) {
+    return res.status(400).json({ error: 'email inválido' });
+  }
+
+  const business = db.prepare('SELECT id, owner_email, name FROM businesses WHERE owner_email = ?').get(
+    owner_email.toLowerCase()
+  );
+
+  if (!business) return res.json({ ok: true });
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+  db.prepare('UPDATE businesses SET reset_token = ?, reset_token_expires = ? WHERE id = ?').run(
+    token, expires, business.id
+  );
+
+  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+
+  try {
+    await getMailer().sendMail({
+      from: process.env.SMTP_USER,
+      to: business.owner_email,
+      subject: 'Recuperar contraseña — AgendaSaaS',
+      text: `Hola ${business.name},\n\nHaz clic en el siguiente enlace para restablecer tu contraseña (válido por 1 hora):\n\n${resetUrl}\n\nSi no solicitaste esto, ignora este email.`,
+      html: `<p>Hola <strong>${business.name}</strong>,</p><p>Haz clic aquí para restablecer tu contraseña (válido por 1 hora):</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Si no solicitaste esto, ignora este email.</p>`,
+    });
+  } catch (err) {
+    console.error('[auth] Error enviando email de reset:', err.message);
+  }
+
+  res.json({ ok: true });
+};
+
+const resetPassword = (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'token y password son requeridos' });
+  if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
+    return res.status(400).json({ error: 'la contraseña debe tener entre 8 y 128 caracteres' });
+  }
+
+  const business = db.prepare(
+    'SELECT id, reset_token_expires FROM businesses WHERE reset_token = ?'
+  ).get(token);
+
+  if (!business) return res.status(400).json({ error: 'Token inválido o expirado' });
+  if (new Date(business.reset_token_expires) < new Date()) {
+    return res.status(400).json({ error: 'Token expirado' });
+  }
+
+  const password_hash = bcrypt.hashSync(password, 12);
+  db.prepare('UPDATE businesses SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?').run(
+    password_hash, business.id
+  );
+
+  res.json({ ok: true });
+};
+
+module.exports = { register, login, me, forgotPassword, resetPassword };
