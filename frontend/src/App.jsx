@@ -17,8 +17,9 @@ const Services      = lazy(() => import('./pages/Services'));
 const Schedules     = lazy(() => import('./pages/Schedules'));
 const Analytics     = lazy(() => import('./pages/Analytics'));
 const Settings      = lazy(() => import('./pages/Settings'));
-const Patients      = lazy(() => import('./pages/Patients'));
-const PatientDetail = lazy(() => import('./pages/PatientDetail'));
+const Patients       = lazy(() => import('./pages/Patients'));
+const PatientDetail  = lazy(() => import('./pages/PatientDetail'));
+const Consultations  = lazy(() => import('./pages/Consultations'));
 const Professionals = lazy(() => import('./pages/Professionals'));
 const Clients       = lazy(() => import('./pages/Clients'));
 
@@ -66,6 +67,7 @@ function App() {
             <Route path="/dashboard/configuracion"   element={<Protected><Layout><Settings /></Layout></Protected>} />
             <Route path="/dashboard/pacientes"       element={<Protected><Layout><Patients /></Layout></Protected>} />
             <Route path="/dashboard/pacientes/:id"   element={<Protected><Layout><PatientDetail /></Layout></Protected>} />
+            <Route path="/dashboard/consultas"       element={<Protected><Layout><Consultations /></Layout></Protected>} />
             <Route path="/dashboard/profesionales"   element={<Protected><Layout><Professionals /></Layout></Protected>} />
             <Route path="/dashboard/clientes"        element={<Protected><Layout><Clients /></Layout></Protected>} />
 

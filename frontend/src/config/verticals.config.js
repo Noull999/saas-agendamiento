@@ -17,6 +17,7 @@ export const VERTICALS = {
       { to: '/dashboard/servicios', label: 'Servicios', icon: '🛠' },
       { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
       { to: '/dashboard/pacientes', label: 'Pacientes', icon: '👤' },
+      { to: '/dashboard/consultas', label: 'Consultas', icon: '🩺' },
       { to: '/dashboard/profesionales', label: 'Profesionales', icon: '👥', minPlan: 'pro' },
       { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
       { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
