@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { VERTICALS } from '../config/verticals.config';
 
 export default function Settings() {
-  const [form, setForm] = useState({ name: '', phone: '', description: '' });
+  const { business, updateBusiness } = useAuth();
+  const [form, setForm] = useState({ name: '', phone: '', description: '', vertical: 'salud' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -10,7 +13,12 @@ export default function Settings() {
 
   useEffect(() => {
     api.get('/settings').then(({ data }) => {
-      setForm({ name: data.name || '', phone: data.phone || '', description: data.description || '' });
+      setForm({
+        name: data.name || '',
+        phone: data.phone || '',
+        description: data.description || '',
+        vertical: data.vertical || 'salud',
+      });
       setLoading(false);
     });
   }, []);
@@ -26,7 +34,8 @@ export default function Settings() {
     setSaving(true);
     setError('');
     try {
-      await api.put('/settings', form);
+      const { data } = await api.put('/settings', form);
+      updateBusiness({ name: data.name, vertical: data.vertical });
       setSaved(true);
     } catch (err) {
       setError(err.response?.data?.error || 'Error al guardar');
@@ -66,10 +75,35 @@ export default function Settings() {
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
           <textarea
-            name="description" value={form.description} onChange={handleChange} rows={4}
+            name="description" value={form.description} onChange={handleChange} rows={3}
             className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             placeholder="Describe tu negocio para que los clientes sepan qué ofreces..."
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de negocio</label>
+          <div className="grid grid-cols-2 gap-3">
+            {Object.values(VERTICALS).map(v => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => { setForm(f => ({ ...f, vertical: v.id })); setSaved(false); }}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                  form.vertical === v.id
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <span className="text-2xl">{v.icon}</span>
+                <div>
+                  <p className={`text-sm font-semibold ${form.vertical === v.id ? 'text-indigo-700' : 'text-slate-700'}`}>{v.label}</p>
+                  <p className="text-xs text-slate-400 leading-tight mt-0.5">{v.description}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-1.5">Cambia el formulario de reserva y el menú del dashboard.</p>
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}

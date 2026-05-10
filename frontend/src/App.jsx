@@ -4,9 +4,11 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 
 // Carga inmediata: páginas pequeñas necesarias antes del primer render
-import Login      from './pages/Login';
-import Register   from './pages/Register';
-import BookingPage from './pages/BookingPage'; // pública, sin auth
+import Login          from './pages/Login';
+import Register        from './pages/Register';
+import ForgotPassword  from './pages/ForgotPassword';
+import ResetPassword   from './pages/ResetPassword';
+import BookingPage     from './pages/BookingPage'; // pública, sin auth
 
 // Carga diferida: páginas del dashboard (~95% del bundle)
 // Se descargan solo cuando el usuario navega a ellas por primera vez
@@ -18,6 +20,7 @@ const Settings      = lazy(() => import('./pages/Settings'));
 const Patients      = lazy(() => import('./pages/Patients'));
 const PatientDetail = lazy(() => import('./pages/PatientDetail'));
 const Professionals = lazy(() => import('./pages/Professionals'));
+const Clients       = lazy(() => import('./pages/Clients'));
 
 function PageLoader() {
   return (
@@ -51,8 +54,10 @@ function App() {
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/login"    element={<PublicOnly><Login /></PublicOnly>} />
-            <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
+            <Route path="/login"            element={<PublicOnly><Login /></PublicOnly>} />
+            <Route path="/register"         element={<PublicOnly><Register /></PublicOnly>} />
+            <Route path="/forgot-password"  element={<PublicOnly><ForgotPassword /></PublicOnly>} />
+            <Route path="/reset-password"   element={<PublicOnly><ResetPassword /></PublicOnly>} />
 
             <Route path="/dashboard"                 element={<Protected><Layout><Bookings /></Layout></Protected>} />
             <Route path="/dashboard/servicios"       element={<Protected><Layout><Services /></Layout></Protected>} />
@@ -62,6 +67,7 @@ function App() {
             <Route path="/dashboard/pacientes"       element={<Protected><Layout><Patients /></Layout></Protected>} />
             <Route path="/dashboard/pacientes/:id"   element={<Protected><Layout><PatientDetail /></Layout></Protected>} />
             <Route path="/dashboard/profesionales"   element={<Protected><Layout><Professionals /></Layout></Protected>} />
+            <Route path="/dashboard/clientes"        element={<Protected><Layout><Clients /></Layout></Protected>} />
 
             <Route path="/book/:slug" element={<BookingPage />} />
             <Route path="*"           element={<Navigate to="/dashboard" replace />} />

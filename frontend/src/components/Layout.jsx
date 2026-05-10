@@ -1,23 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getVertical, meetsMinPlan } from '../config/verticals.config';
 
 export default function Layout({ children }) {
   const { business, logout } = useAuth();
   const navigate = useNavigate();
 
-  const isPro = business?.plan === 'pro' || business?.plan === 'clinic';
+  const vertical = getVertical(business?.vertical);
+  const links = vertical.modules.filter(m => meetsMinPlan(business?.plan, m.minPlan));
 
   const handleLogout = () => { logout(); navigate('/login'); };
-
-  const links = [
-    { to: '/dashboard', label: 'Reservas', icon: '📅' },
-    { to: '/dashboard/servicios', label: 'Servicios', icon: '🛠' },
-    { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
-    { to: '/dashboard/pacientes', label: 'Pacientes', icon: '👤' },
-    ...(isPro ? [{ to: '/dashboard/profesionales', label: 'Profesionales', icon: '👥' }] : []),
-    { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
-    { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
-  ];
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -27,7 +19,10 @@ export default function Layout({ children }) {
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
               {business?.name?.[0]?.toUpperCase() || 'S'}
             </div>
-            <span className="text-white font-semibold text-sm truncate">{business?.name || 'Dashboard'}</span>
+            <div className="min-w-0">
+              <span className="text-white font-semibold text-sm truncate block">{business?.name || 'Dashboard'}</span>
+              <span className="text-slate-500 text-xs">{vertical.label}</span>
+            </div>
           </div>
         </div>
 

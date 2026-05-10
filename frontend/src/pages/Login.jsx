@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ owner_email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,6 +53,12 @@ export default function Login() {
           <h2 className="text-2xl font-bold text-slate-900 mb-1">Bienvenido de vuelta</h2>
           <p className="text-slate-500 text-sm mb-8">Accede al panel de tu negocio</p>
 
+          {location.state?.msg && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl px-4 py-3 mb-4">
+              {location.state.msg}
+            </div>
+          )}
+
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
@@ -62,7 +69,10 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Contraseña</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-slate-700">Contraseña</label>
+                <Link to="/forgot-password" className="text-xs text-indigo-600 hover:underline">¿Olvidaste tu contraseña?</Link>
+              </div>
               <input
                 name="password" type="password" required value={form.password} onChange={handle}
                 className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"

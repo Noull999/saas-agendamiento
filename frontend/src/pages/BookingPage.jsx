@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { getVertical } from '../config/verticals.config';
 
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -90,6 +91,8 @@ export default function BookingPage() {
   );
 
   const { business, services, schedules } = profile;
+  const vertical = getVertical(business?.vertical);
+  const showRut = vertical.booking.showRut;
 
   const availableDates = getDatesForNextDays(30).filter((d) => {
     const sched = schedules.find((s) => s.dow === d.getDay());
@@ -302,7 +305,7 @@ export default function BookingPage() {
                       placeholder="Tu nombre"
                     />
                   </div>
-                  {business?.specialty && business.specialty !== 'general' && (
+                  {showRut && (
                     <div>
                       <label className="text-xs font-semibold text-slate-700">
                         RUT *{' '}
@@ -351,7 +354,7 @@ export default function BookingPage() {
                   <button
                     onClick={handleSubmit}
                     disabled={submitting || !form.client_name || !form.client_phone ||
-                      (business?.specialty && business.specialty !== 'general' && !isValidRut(form.client_rut))}
+                      (showRut && !isValidRut(form.client_rut))}
                     className="w-full bg-indigo-600 text-white rounded-2xl py-3.5 text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors mt-2"
                   >
                     {submitting ? 'Agendando...' : 'Confirmar reserva →'}

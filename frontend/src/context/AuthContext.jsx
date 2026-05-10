@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
     return data.business;
   };
 
-  const register = async (name, owner_email, password, phone, specialty) => {
-    const { data } = await api.post('/auth/register', { name, owner_email, password, phone, specialty });
+  const register = async (name, owner_email, password, phone, specialty, vertical) => {
+    const { data } = await api.post('/auth/register', { name, owner_email, password, phone, specialty, vertical });
     localStorage.setItem('token', data.token);
     localStorage.setItem('business', JSON.stringify(data.business));
     setBusiness(data.business);
@@ -30,8 +30,14 @@ export function AuthProvider({ children }) {
     setBusiness(null);
   };
 
+  const updateBusiness = (patch) => {
+    const updated = { ...business, ...patch };
+    localStorage.setItem('business', JSON.stringify(updated));
+    setBusiness(updated);
+  };
+
   return (
-    <AuthContext.Provider value={{ business, login, register, logout }}>
+    <AuthContext.Provider value={{ business, login, register, logout, updateBusiness }}>
       {children}
     </AuthContext.Provider>
   );
