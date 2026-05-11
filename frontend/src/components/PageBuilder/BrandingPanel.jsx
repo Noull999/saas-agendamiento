@@ -60,9 +60,12 @@ export default function BrandingPanel({ branding, onUpdate }) {
           placeholder="URL de tu logo"
           value={branding.logo_url || ''}
           onChange={(e) => handleChange('logo_url', e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            errors.logo_url ? 'border-red-400' : 'border-gray-200'
+          }`}
         />
-        <p className="text-xs text-gray-500 mt-1">Usa una imagen PNG transparente para mejor resultado</p>
+        {errors.logo_url && <p className="text-xs text-red-600 mt-1">{errors.logo_url}</p>}
+        {!errors.logo_url && <p className="text-xs text-gray-500 mt-1">Usa una imagen PNG transparente para mejor resultado</p>}
       </div>
 
       {/* Colores */}
@@ -88,8 +91,11 @@ export default function BrandingPanel({ branding, onUpdate }) {
           placeholder="#1a5490"
           value={branding.primary_color || '#1a5490'}
           onChange={(e) => handleChange('primary_color', e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            errors.primary_color ? 'border-red-400' : 'border-gray-200'
+          }`}
         />
+        {errors.primary_color && <p className="text-xs text-red-600 mt-1">{errors.primary_color}</p>}
       </div>
 
       <div className="space-y-3">
@@ -99,8 +105,11 @@ export default function BrandingPanel({ branding, onUpdate }) {
           placeholder="#2c5aa0"
           value={branding.secondary_color || '#2c5aa0'}
           onChange={(e) => handleChange('secondary_color', e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            errors.secondary_color ? 'border-red-400' : 'border-gray-200'
+          }`}
         />
+        {errors.secondary_color && <p className="text-xs text-red-600 mt-1">{errors.secondary_color}</p>}
       </div>
 
       {/* Fuente */}

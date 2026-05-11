@@ -30,8 +30,10 @@ export default function ThemeBuilder() {
     loadConfig();
   }, []);
 
-  const loadConfig = async () => {
+  const loadConfig = async (retryCount = 0) => {
     setIsLoading(true);
+    setError('');
+
     try {
       const response = await axios.get('/api/page-builder/config');
       const config = response.data;
@@ -40,9 +42,30 @@ export default function ThemeBuilder() {
       if (config.branding) setBranding(config.branding);
       if (config.sections) setSections(config.sections);
     } catch (err) {
-      setError('Error cargando configuración');
-      console.error(err);
-      initializeDefaultSections();
+      const maxRetries = 3;
+      const isNetworkError = !err.response || err.code === 'ECONNABORTED';
+
+      if (isNetworkError && retryCount < maxRetries) {
+        const delayMs = Math.pow(2, retryCount) * 1000;
+        setTimeout(() => loadConfig(retryCount + 1), delayMs);
+        if (retryCount === 0) {
+          setError('Reintentando conexión...');
+        }
+      } else {
+        let errorMsg = 'Error cargando configuración';
+        if (err.response?.status === 401) {
+          errorMsg = 'No autorizado. Por favor inicia sesión nuevamente';
+        } else if (err.response?.status === 404) {
+          errorMsg = 'Configuración no encontrada. Se usarán valores por defecto';
+        } else if (isNetworkError) {
+          errorMsg = 'Error de conexión. Verifica tu conexión a internet';
+        } else if (err.response?.data?.error) {
+          errorMsg = err.response.data.error;
+        }
+        setError(errorMsg);
+        console.error('Config load error:', err);
+        initializeDefaultSections();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -92,8 +115,22 @@ export default function ThemeBuilder() {
       setSuccessMessage('Configuración guardada exitosamente');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error guardando configuración');
-      console.error(err);
+      let errorMsg = 'Error guardando configuración';
+
+      if (err.response?.status === 400) {
+        errorMsg = err.response.data?.error || 'Configuración inválida. Verifica los datos y vuelve a intentar';
+      } else if (err.response?.status === 401) {
+        errorMsg = 'Tu sesión ha expirado. Por favor inicia sesión nuevamente';
+      } else if (err.code === 'ECONNABORTED') {
+        errorMsg = 'Tiempo de conexión agotado. Verifica tu conexión e intenta nuevamente';
+      } else if (!err.response) {
+        errorMsg = 'Error de conexión. Verifica tu conexión a internet';
+      } else if (err.response?.data?.error) {
+        errorMsg = err.response.data.error;
+      }
+
+      setError(errorMsg);
+      console.error('Save error:', err);
     } finally {
       setIsSaving(false);
     }
