@@ -1,13 +1,39 @@
 import { useState } from 'react';
+import { isValidHexColor, isValidUrl } from '../../utils/validation';
 
 export default function BrandingPanel({ branding, onUpdate }) {
   const [showColorPicker, setShowColorPicker] = useState(null);
+  const [errors, setErrors] = useState({});
 
   const handleChange = (field, value) => {
-    onUpdate({
-      ...branding,
-      [field]: value
-    });
+    const newErrors = { ...errors };
+
+    // Validar por campo
+    if (field === 'primary_color' || field === 'secondary_color') {
+      if (value && !isValidHexColor(value)) {
+        newErrors[field] = 'Formato de color inválido (ej: #1a5490)';
+      } else {
+        delete newErrors[field];
+      }
+    }
+
+    if (field === 'logo_url') {
+      if (value && !isValidUrl(value)) {
+        newErrors[field] = 'URL inválida o insegura';
+      } else {
+        delete newErrors[field];
+      }
+    }
+
+    setErrors(newErrors);
+
+    // Solo actualizar si no hay errores
+    if (Object.keys(newErrors).length === 0) {
+      onUpdate({
+        ...branding,
+        [field]: value
+      });
+    }
   };
 
   const fonts = [

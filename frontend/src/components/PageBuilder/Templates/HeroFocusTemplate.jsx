@@ -1,16 +1,16 @@
-export default function HeroFocusTemplate({ business, branding, sections, sectionOrder, children }) {
-  const getFontFamily = (fontId) => {
-    const fonts = {
-      inter: "'Inter', sans-serif",
-      poppins: "'Poppins', sans-serif",
-      roboto: "'Roboto', sans-serif",
-      playfair: "'Playfair Display', serif"
-    };
-    return fonts[fontId] || fonts.inter;
-  };
+import { getFontFamily } from '../../../utils/validation';
 
-  const visibleSections = (sectionOrder || []).filter(id => sections[id]?.enabled);
-  const heroSection = sections.hero;
+export default function HeroFocusTemplate({ business, branding, sections, sectionOrder, children }) {
+  if (!business || typeof business !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Datos de negocio inválidos</div>;
+  }
+
+  if (!sections || typeof sections !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Secciones no configuradas</div>;
+  }
+
+  const visibleSections = Array.isArray(sectionOrder) ? sectionOrder.filter(id => sections[id]?.enabled) : [];
+  const heroSection = sections?.hero;
 
   return (
     <div
@@ -22,10 +22,10 @@ export default function HeroFocusTemplate({ business, branding, sections, sectio
         className="relative w-full min-h-[600px] md:min-h-[700px] flex items-center justify-center overflow-hidden"
       >
         {/* Background */}
-        {heroSection?.bg_image_url && (
+        {heroSection?.bg_image_url && typeof heroSection.bg_image_url === 'string' && heroSection.bg_image_url.trim() && (
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${heroSection.bg_image_url})` }}
+            style={{ backgroundImage: `url('${heroSection.bg_image_url}')` }}
           >
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black opacity-40"></div>
           </div>
@@ -44,7 +44,12 @@ export default function HeroFocusTemplate({ business, branding, sections, sectio
         {/* Content */}
         <div className="relative z-10 text-center max-w-3xl px-6">
           {branding?.logo_url && (
-            <img src={branding.logo_url} alt="Logo" className="h-20 object-contain mx-auto mb-8" />
+            <img
+              src={branding.logo_url}
+              alt="Logo"
+              className="h-20 object-contain mx-auto mb-8"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
           )}
 
           <h1
@@ -136,6 +141,8 @@ export default function HeroFocusTemplate({ business, branding, sections, sectio
                     src={section.image_url}
                     alt={section.title}
                     className="w-full h-64 object-cover rounded-lg mb-6"
+                    loading="lazy"
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 )}
 

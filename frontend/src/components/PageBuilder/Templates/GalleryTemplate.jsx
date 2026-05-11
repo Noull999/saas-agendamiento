@@ -1,15 +1,15 @@
-export default function GalleryTemplate({ business, branding, sections, sectionOrder, children }) {
-  const getFontFamily = (fontId) => {
-    const fonts = {
-      inter: "'Inter', sans-serif",
-      poppins: "'Poppins', sans-serif",
-      roboto: "'Roboto', sans-serif",
-      playfair: "'Playfair Display', serif"
-    };
-    return fonts[fontId] || fonts.inter;
-  };
+import { getFontFamily } from '../../../utils/validation';
 
-  const visibleSections = (sectionOrder || []).filter(id => sections[id]?.enabled);
+export default function GalleryTemplate({ business, branding, sections, sectionOrder, children }) {
+  if (!business || typeof business !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Datos de negocio inválidos</div>;
+  }
+
+  if (!sections || typeof sections !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Secciones no configuradas</div>;
+  }
+
+  const visibleSections = Array.isArray(sectionOrder) ? sectionOrder.filter(id => sections[id]?.enabled) : [];
 
   return (
     <div
@@ -26,7 +26,12 @@ export default function GalleryTemplate({ business, branding, sections, sectionO
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             {branding?.logo_url && (
-              <img src={branding.logo_url} alt="Logo" className="h-10 object-contain" />
+              <img
+                src={branding.logo_url}
+                alt="Logo"
+                className="h-10 object-contain"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
             )}
             <div>
               <h1 className={`font-bold text-lg ${
@@ -89,6 +94,8 @@ export default function GalleryTemplate({ business, branding, sections, sectionO
                           src={section.image_url}
                           alt={`Galería ${item}`}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          onError={(e) => { e.target.style.display = 'none'; }}
                         />
                       </div>
                     ))}
@@ -101,14 +108,16 @@ export default function GalleryTemplate({ business, branding, sections, sectionO
                     src={section.image_url}
                     alt={section.title}
                     className="w-full h-80 object-cover rounded-lg shadow-lg mb-8"
+                    loading="lazy"
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 )}
 
                 {/* Imagen de fondo */}
-                {section.bg_image_url && (
+                {section.bg_image_url && typeof section.bg_image_url === 'string' && section.bg_image_url.trim() && (
                   <div
                     className="w-full h-96 rounded-lg mb-8 bg-cover bg-center shadow-lg relative"
-                    style={{ backgroundImage: `url(${section.bg_image_url})` }}
+                    style={{ backgroundImage: `url('${section.bg_image_url}')` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-lg"></div>
                   </div>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import TemplateSelector from './TemplateSelector';
+
+axios.defaults.timeout = 10000;
 import BrandingPanel from './BrandingPanel';
 import ContentEditor from './ContentEditor';
 import SectionManager from './SectionManager';

@@ -1,4 +1,14 @@
+import { getFontFamily } from '../../../utils/validation';
+
 export default function ModernMinimalTemplate({ business, branding, sections, sectionOrder, children }) {
+  if (!business || typeof business !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Datos de negocio inválidos</div>;
+  }
+
+  if (!sections || typeof sections !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Secciones no configuradas</div>;
+  }
+
   const getCSSVars = () => {
     return {
       '--primary-color': branding?.primary_color || '#1a5490',
@@ -7,17 +17,7 @@ export default function ModernMinimalTemplate({ business, branding, sections, se
     };
   };
 
-  const getFontFamily = (fontId) => {
-    const fonts = {
-      inter: "'Inter', sans-serif",
-      poppins: "'Poppins', sans-serif",
-      roboto: "'Roboto', sans-serif",
-      playfair: "'Playfair Display', serif"
-    };
-    return fonts[fontId] || fonts.inter;
-  };
-
-  const visibleSections = (sectionOrder || []).filter(id => sections[id]?.enabled);
+  const visibleSections = Array.isArray(sectionOrder) ? sectionOrder.filter(id => sections[id]?.enabled) : [];
 
   return (
     <div
@@ -35,7 +35,12 @@ export default function ModernMinimalTemplate({ business, branding, sections, se
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             {branding?.logo_url && (
-              <img src={branding.logo_url} alt="Logo" className="h-12 object-contain" />
+              <img
+                src={branding.logo_url}
+                alt="Logo"
+                className="h-12 object-contain"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
             )}
             <div className="text-white">
               <h1 className="text-2xl font-bold">{business?.name}</h1>
@@ -81,13 +86,15 @@ export default function ModernMinimalTemplate({ business, branding, sections, se
                     src={section.image_url}
                     alt={section.title}
                     className="w-full h-64 object-cover rounded-lg mb-6"
+                    loading="lazy"
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 )}
 
-                {section.bg_image_url && (
+                {section.bg_image_url && typeof section.bg_image_url === 'string' && section.bg_image_url.trim() && (
                   <div
                     className="w-full h-80 rounded-lg mb-6 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${section.bg_image_url})` }}
+                    style={{ backgroundImage: `url('${section.bg_image_url}')` }}
                   />
                 )}
 

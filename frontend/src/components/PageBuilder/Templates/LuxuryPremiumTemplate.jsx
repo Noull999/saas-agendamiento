@@ -1,15 +1,15 @@
-export default function LuxuryPremiumTemplate({ business, branding, sections, sectionOrder, children }) {
-  const getFontFamily = (fontId) => {
-    const fonts = {
-      inter: "'Inter', sans-serif",
-      poppins: "'Poppins', sans-serif",
-      roboto: "'Roboto', sans-serif",
-      playfair: "'Playfair Display', serif"
-    };
-    return fonts[fontId] || fonts.inter;
-  };
+import { getFontFamily } from '../../../utils/validation';
 
-  const visibleSections = (sectionOrder || []).filter(id => sections[id]?.enabled);
+export default function LuxuryPremiumTemplate({ business, branding, sections, sectionOrder, children }) {
+  if (!business || typeof business !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Datos de negocio inválidos</div>;
+  }
+
+  if (!sections || typeof sections !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Secciones no configuradas</div>;
+  }
+
+  const visibleSections = Array.isArray(sectionOrder) ? sectionOrder.filter(id => sections[id]?.enabled) : [];
 
   return (
     <div
@@ -31,7 +31,12 @@ export default function LuxuryPremiumTemplate({ business, branding, sections, se
 
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           {branding?.logo_url && (
-            <img src={branding.logo_url} alt="Logo" className="h-20 object-contain mx-auto mb-8 filter brightness-200" />
+            <img
+              src={branding.logo_url}
+              alt="Logo"
+              className="h-20 object-contain mx-auto mb-8 filter brightness-200"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
           )}
 
           <h1
@@ -103,12 +108,14 @@ export default function LuxuryPremiumTemplate({ business, branding, sections, se
             return (
               <section key={sectionId} id={sectionId} className="scroll-mt-20">
                 {/* Sección con imagen de fondo */}
-                {section.bg_image_url && (
+                {section.bg_image_url && typeof section.bg_image_url === 'string' && section.bg_image_url.trim() && (
                   <div className="mb-12 relative h-96 overflow-hidden rounded-sm">
                     <img
                       src={section.bg_image_url}
                       alt=""
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => { e.target.style.display = 'none'; }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                   </div>
@@ -143,6 +150,8 @@ export default function LuxuryPremiumTemplate({ business, branding, sections, se
                     src={section.image_url}
                     alt={section.title}
                     className="w-full h-96 object-cover rounded-sm mb-8"
+                    loading="lazy"
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 )}
 

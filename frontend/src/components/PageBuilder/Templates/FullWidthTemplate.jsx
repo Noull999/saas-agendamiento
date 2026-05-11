@@ -1,4 +1,14 @@
+import { getFontFamily } from '../../../utils/validation';
+
 export default function FullWidthTemplate({ business, branding, sections, sectionOrder, children }) {
+  if (!business || typeof business !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Datos de negocio inválidos</div>;
+  }
+
+  if (!sections || typeof sections !== 'object') {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500">Secciones no configuradas</div>;
+  }
+
   const getCSSVars = () => {
     return {
       '--primary-color': branding?.primary_color || '#10b981',
@@ -7,17 +17,7 @@ export default function FullWidthTemplate({ business, branding, sections, sectio
     };
   };
 
-  const getFontFamily = (fontId) => {
-    const fonts = {
-      inter: "'Inter', sans-serif",
-      poppins: "'Poppins', sans-serif",
-      roboto: "'Roboto', sans-serif",
-      playfair: "'Playfair Display', serif"
-    };
-    return fonts[fontId] || fonts.inter;
-  };
-
-  const visibleSections = (sectionOrder || []).filter(id => sections[id]?.enabled);
+  const visibleSections = Array.isArray(sectionOrder) ? sectionOrder.filter(id => sections[id]?.enabled) : [];
 
   return (
     <div
@@ -39,7 +39,12 @@ export default function FullWidthTemplate({ business, branding, sections, sectio
         <div className="relative z-10 max-w-6xl mx-auto px-6">
           <div className="flex items-center gap-6 mb-8">
             {branding?.logo_url && (
-              <img src={branding.logo_url} alt="Logo" className="h-16 object-contain filter brightness-0 invert" />
+              <img
+                src={branding.logo_url}
+                alt="Logo"
+                className="h-16 object-contain filter brightness-0 invert"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
             )}
           </div>
 
@@ -55,13 +60,13 @@ export default function FullWidthTemplate({ business, branding, sections, sectio
         {visibleSections.map((sectionId) => {
           const section = sections[sectionId];
 
-          if (section.bg_image_url) {
+          if (section.bg_image_url && typeof section.bg_image_url === 'string' && section.bg_image_url.trim()) {
             return (
               <section
                 key={sectionId}
                 className="w-full py-16 md:py-24 relative text-white"
                 style={{
-                  backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${section.bg_image_url})`,
+                  backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${section.bg_image_url}')`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
                 }}
@@ -111,6 +116,8 @@ export default function FullWidthTemplate({ business, branding, sections, sectio
                     src={section.image_url}
                     alt={section.title}
                     className="w-full h-80 object-cover rounded-lg"
+                    loading="lazy"
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 )}
 

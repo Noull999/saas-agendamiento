@@ -279,17 +279,25 @@ export default function BookingPage() {
 
   const { business, services, schedules } = profile;
 
+  if (!business || typeof business !== 'object' || !Array.isArray(services) || !Array.isArray(schedules)) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-400">Error: Datos de perfil incompletos</p>
+      </div>
+    );
+  }
+
   const availableDates = getDatesForNextDays(30).filter((d) => {
-    const sched = schedules.find((s) => s.dow === d.getDay());
-    return sched && sched.slots.length > 0;
+    const sched = schedules.find((s) => s && s.dow === d.getDay());
+    return sched && Array.isArray(sched.slots) && sched.slots.length > 0;
   });
 
-  const slotsForDate = selectedDate
-    ? (schedules.find((s) => s.dow === selectedDate.getDay())?.slots || [])
+  const slotsForDate = selectedDate && selectedDate instanceof Date
+    ? (schedules.find((s) => s && s.dow === selectedDate.getDay())?.slots || [])
     : [];
 
   const handleSubmit = async () => {
-    if (!form.client_name) return;
+    if (!form.client_name || !selectedDate || !(selectedDate instanceof Date)) return;
     setSubmitting(true);
     try {
       const datetime_iso = `${selectedDate.toISOString().slice(0, 10)}T${selectedSlot}:00`;

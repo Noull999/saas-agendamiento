@@ -20,7 +20,8 @@ export default function TemplateRenderer({
   sectionOrder = [],
   children
 }) {
-  const Template = TEMPLATES[templateId] || TEMPLATES.modern_minimal;
+  const validTemplateId = TEMPLATES[templateId] ? templateId : 'modern_minimal';
+  const Template = TEMPLATES[validTemplateId];
 
   // Set default branding values if not provided
   const defaultBranding = {
