@@ -138,8 +138,11 @@ export default function ThemeBuilder() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-600">Cargando configuración...</div>
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando configuración...</p>
+        </div>
       </div>
     );
   }
@@ -147,30 +150,30 @@ export default function ThemeBuilder() {
   const sectionOrder = sections.section_order || Object.keys(sections).filter(k => k !== 'section_order');
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Constructor de Página</h1>
-          <p className="text-gray-600">Personaliza tu página de reservas con templates y estilos</p>
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 mb-8">
+          <h1 className="text-4xl font-bold mb-2">Constructor de Página</h1>
+          <p className="text-blue-100">Personaliza tu página de reservas con templates y estilos premium</p>
         </div>
 
         {/* Mensajes */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded-lg text-red-700 text-sm">
+            <span className="font-semibold">Error:</span> {error}
           </div>
         )}
         {successMessage && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-            {successMessage}
+          <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-600 rounded-lg text-green-700 text-sm">
+            <span className="font-semibold">✓ Éxito:</span> {successMessage}
           </div>
         )}
 
         {/* Contenedor principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-6 pb-12">
           {/* Panel izquierdo - Editor */}
-          <div className="lg:col-span-1 space-y-6 max-h-screen overflow-y-auto">
+          <div className="lg:col-span-1 space-y-6">
             <TemplateSelector
               selectedTemplate={selectedTemplate}
               onSelectTemplate={handleTemplateSelect}
@@ -196,19 +199,26 @@ export default function ThemeBuilder() {
             <button
               onClick={saveConfig}
               disabled={isSaving}
-              className={`w-full py-3 rounded-lg font-medium text-white transition-all ${
+              className={`w-full py-3 rounded-lg font-semibold text-white transition-all transform ${
                 isSaving
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95'
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 active:scale-95'
               }`}
             >
-              {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              {isSaving ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Guardando...
+                </span>
+              ) : (
+                '💾 Guardar Cambios'
+              )}
             </button>
           </div>
 
           {/* Panel derecho - Preview */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden" style={{ height: '80vh' }}>
+            <div className="bg-white rounded-xl shadow-2xl overflow-hidden" style={{ height: '80vh' }}>
               <TemplatePreview
                 template={selectedTemplate}
                 branding={branding}

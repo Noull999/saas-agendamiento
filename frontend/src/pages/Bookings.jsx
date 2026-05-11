@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
+import { StatCard, StatsGrid } from '../components/ui/StatCard';
+import { Section, Container, SectionTitle } from '../components/ui/Section';
 
 const STATUS_LABELS = {
   confirmed: { label: 'Confirmada', color: 'bg-emerald-100 text-emerald-700' },
@@ -104,153 +106,193 @@ export default function Bookings() {
   const inputClass = 'w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Reservas</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Gestiona las citas de tu negocio</p>
-        </div>
-        <input
-          type="date" value={date} onChange={(e) => setDate(e.target.value)}
-          className="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <p className="text-sm text-slate-500 mb-1">Total del día</p>
-          <p className="text-3xl font-bold text-slate-900">{bookings.length}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <p className="text-sm text-slate-500 mb-1">Confirmadas</p>
-          <p className="text-3xl font-bold text-emerald-600">{confirmed}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <p className="text-sm text-slate-500 mb-1">Con ficha</p>
-          <p className="text-3xl font-bold text-indigo-600">{bookings.filter(b => b.patient_id).length}</p>
-        </div>
-      </div>
-
-      {loading && <p className="text-slate-400 text-sm">Cargando...</p>}
-
-      {!loading && bookings.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-16 text-center shadow-sm">
-          <p className="text-4xl mb-3">📭</p>
-          <p className="text-slate-400 text-sm">No hay reservas para este día</p>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {bookings.map((b) => (
-          <div key={b.id} className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
-              {initials(b.client_name)}
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <Section gradient className="mb-0">
+        <Container>
+          <div className="flex items-center justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Reservas del Día</h1>
+              <p className="text-gray-600">Gestiona y controla todas las citas de tu negocio en tiempo real</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-slate-900 text-sm">{b.client_name}</p>
-              <p className="text-slate-400 text-xs">
-                {b.service_name || 'Sin servicio'}{b.duration_min ? ` · ${b.duration_min} min` : ''}{b.client_phone ? ` · ${b.client_phone}` : ''}
-              </p>
-              <div className="mt-1">
-                {b.patient_name ? (
-                  <button
-                    onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
-                    className="text-xs text-indigo-600 hover:underline"
-                  >
-                    👤 {b.patient_name}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { setLinkModal(b.id); setPatientSearch(''); setPatientResults([]); setShowNewPatient(false); setNewPatientForm(EMPTY_PATIENT_FORM); }}
-                    className="text-xs text-slate-400 hover:text-indigo-600 border border-dashed border-slate-200 px-2 py-0.5 rounded-lg"
-                  >
-                    Vincular paciente
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="text-indigo-600 font-bold text-sm shrink-0">{formatTime(b.datetime_iso)}</div>
-            <div className="flex items-center gap-2 shrink-0">
-              {b.patient_id && (
-                <button
-                  onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
-                  className="text-xs border border-slate-200 px-2 py-1 rounded-lg text-slate-600 hover:bg-slate-50"
-                >
-                  Nueva consulta
-                </button>
-              )}
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_LABELS[b.status]?.color}`}>
-                {STATUS_LABELS[b.status]?.label || b.status}
-              </span>
-              <select
-                value={b.status}
-                onChange={(e) => changeStatus(b.id, e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white"
-              >
-                <option value="confirmed">Confirmada</option>
-                <option value="completed">Completada</option>
-                <option value="cancelled">Cancelada</option>
-                <option value="no_show">No asistió</option>
-              </select>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 whitespace-nowrap"
+            />
+          </div>
+        </Container>
+      </Section>
+
+      {/* Stats Grid */}
+      <Container className="py-12">
+        <StatsGrid>
+          <StatCard
+            title="Total del día"
+            value={bookings.length.toString()}
+            icon="📅"
+            color="blue"
+          />
+          <StatCard
+            title="Confirmadas"
+            value={confirmed.toString()}
+            icon="✅"
+            color="green"
+          />
+          <StatCard
+            title="Con ficha"
+            value={bookings.filter(b => b.patient_id).length.toString()}
+            icon="👤"
+            color="purple"
+          />
+        </StatsGrid>
+      </Container>
+
+      {/* Main Content */}
+      <Container className="pb-12">
+
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-400">
+              <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
           </div>
-        ))}
-      </div>
+        )}
+
+        {!loading && bookings.length === 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
+            <p className="text-5xl mb-4">📭</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin reservas</h3>
+            <p className="text-gray-400">No hay reservas programadas para este día</p>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {bookings.map((b) => (
+            <div key={b.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-gray-200 transition-all">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {initials(b.client_name)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900">{b.client_name}</p>
+                <p className="text-gray-500 text-sm">
+                  {b.service_name || 'Sin servicio'}
+                  {b.duration_min && ` • ${b.duration_min} min`}
+                  {b.client_phone && ` • ${b.client_phone}`}
+                </p>
+                <div className="mt-2">
+                  {b.patient_name ? (
+                    <button
+                      onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      👤 {b.patient_name}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setLinkModal(b.id);
+                        setPatientSearch('');
+                        setPatientResults([]);
+                        setShowNewPatient(false);
+                        setNewPatientForm(EMPTY_PATIENT_FORM);
+                      }}
+                      className="text-sm text-gray-400 hover:text-blue-600 border border-dashed border-gray-300 px-3 py-1 rounded-lg transition-colors"
+                    >
+                      + Vincular paciente
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-blue-600 font-bold text-lg">{formatTime(b.datetime_iso)}</div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {b.patient_id && (
+                  <button
+                    onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
+                    className="text-sm border border-gray-200 px-3 py-1 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    + Consulta
+                  </button>
+                )}
+                <span className={`text-sm px-3 py-1 rounded-full font-medium ${STATUS_LABELS[b.status]?.color}`}>
+                  {STATUS_LABELS[b.status]?.label || b.status}
+                </span>
+                <select
+                  value={b.status}
+                  onChange={(e) => changeStatus(b.id, e.target.value)}
+                  className="text-sm border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="confirmed">Confirmada</option>
+                  <option value="completed">Completada</option>
+                  <option value="cancelled">Cancelada</option>
+                  <option value="no_show">No asistió</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Container>
 
       {/* Link patient modal */}
       {linkModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Vincular paciente</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Vincular paciente</h2>
             {!showNewPatient ? (
               <>
                 <input
                   value={patientSearch}
                   onChange={e => searchPatients(e.target.value)}
                   placeholder="Buscar por nombre o RUT..."
-                  className={`${inputClass} mb-3`}
+                  className={`${inputClass} mb-4`}
+                  autoFocus
                 />
-                {patientResults.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => linkPatient(linkModal, p.id)}
-                    disabled={linkSaving}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-xl text-sm mb-1"
-                  >
-                    <span className="font-medium">{p.name}</span>
-                    <span className="text-slate-400 text-xs ml-2 font-mono">{p.rut}</span>
-                  </button>
-                ))}
+                <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+                  {patientResults.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => linkPatient(linkModal, p.id)}
+                      disabled={linkSaving}
+                      className="w-full text-left px-4 py-3 hover:bg-blue-50 rounded-lg text-sm transition-colors border border-gray-100"
+                    >
+                      <span className="font-medium text-gray-900">{p.name}</span>
+                      <span className="text-gray-400 text-xs ml-3 font-mono">{p.rut}</span>
+                    </button>
+                  ))}
+                </div>
                 {patientSearch && patientResults.length === 0 && (
-                  <p className="text-slate-400 text-xs mb-3">No encontrado.</p>
+                  <p className="text-gray-400 text-sm mb-4">No encontrado</p>
                 )}
-                <button onClick={() => setShowNewPatient(true)} className="text-sm text-indigo-600 hover:underline mt-2 block">
+                <button onClick={() => setShowNewPatient(true)} className="text-sm text-blue-600 hover:text-blue-700 font-medium mb-4">
                   + Crear nuevo paciente
                 </button>
-                <div className="mt-4">
-                  <button onClick={() => setLinkModal(null)} className="w-full border border-slate-200 rounded-xl py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+                <div className="flex gap-3">
+                  <button onClick={() => setLinkModal(null)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
                 </div>
               </>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">RUT *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">RUT *</label>
                   <input value={newPatientForm.rut} onChange={e => setNewPatientForm({ ...newPatientForm, rut: e.target.value })} placeholder="12.345.678-9" className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre *</label>
                   <input value={newPatientForm.name} onChange={e => setNewPatientForm({ ...newPatientForm, name: e.target.value })} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Teléfono</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                   <input value={newPatientForm.phone} onChange={e => setNewPatientForm({ ...newPatientForm, phone: e.target.value })} className={inputClass} />
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={() => setShowNewPatient(false)} className="flex-1 border border-slate-200 rounded-xl py-2 text-sm text-slate-600 hover:bg-slate-50">Atrás</button>
+                <div className="flex gap-3 pt-4">
+                  <button onClick={() => setShowNewPatient(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Atrás</button>
                   <button
                     onClick={() => createAndLink(linkModal)}
                     disabled={linkSaving || !newPatientForm.name}
-                    className="flex-1 bg-indigo-600 text-white rounded-xl py-2 text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50"
+                    className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
                     {linkSaving ? 'Guardando...' : 'Crear y vincular'}
                   </button>

@@ -49,76 +49,92 @@ export default function BrandingPanel({ branding, onUpdate }) {
   ];
 
   return (
-    <div className="space-y-6 bg-gray-50 p-6 rounded-xl">
-      <h3 className="font-bold text-gray-900">Marca & Estilos</h3>
+    <div className="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+      <div>
+        <h3 className="text-2xl font-bold text-gray-900">🎨 Marca & Estilos</h3>
+        <p className="text-gray-600 text-sm mt-1">Personaliza los colores y elementos visuales</p>
+      </div>
 
       {/* Logo */}
       <div>
-        <label className="text-xs font-semibold text-gray-700 block mb-2">Logo</label>
+        <label className="text-sm font-semibold text-gray-700 block mb-3">Logo</label>
         <input
           type="url"
-          placeholder="URL de tu logo"
+          placeholder="https://ejemplo.com/logo.png"
           value={branding.logo_url || ''}
           onChange={(e) => handleChange('logo_url', e.target.value)}
-          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-            errors.logo_url ? 'border-red-400' : 'border-gray-200'
+          className={`w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+            errors.logo_url ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
           }`}
         />
-        {errors.logo_url && <p className="text-xs text-red-600 mt-1">{errors.logo_url}</p>}
-        {!errors.logo_url && <p className="text-xs text-gray-500 mt-1">Usa una imagen PNG transparente para mejor resultado</p>}
+        {errors.logo_url && (
+          <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
+            <span>⚠️</span> {errors.logo_url}
+          </p>
+        )}
+        {!errors.logo_url && (
+          <p className="text-sm text-gray-500 mt-2">💡 Usa una imagen PNG transparente para mejor resultado</p>
+        )}
+        {branding.logo_url && !errors.logo_url && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center h-20">
+            <img src={branding.logo_url} alt="Logo preview" className="max-h-16 max-w-32" onError={() => {}} />
+          </div>
+        )}
       </div>
 
       {/* Colores */}
-      <div className="space-y-3">
-        <label className="text-xs font-semibold text-gray-700">Color Principal</label>
-        <div className="flex gap-2 flex-wrap">
-          {colorOptions.map((color) => (
-            <button
-              key={color}
-              onClick={() => handleChange('primary_color', color)}
-              className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                branding.primary_color === color
-                  ? 'border-gray-900 shadow-md'
-                  : 'border-gray-300 hover:border-gray-500'
-              }`}
-              style={{ backgroundColor: color }}
-              title={color}
-            />
-          ))}
+      <div className="space-y-4 pt-4 border-t border-gray-100">
+        <div>
+          <label className="text-sm font-semibold text-gray-700 block mb-3">Color Principal</label>
+          <div className="flex gap-3 flex-wrap">
+            {colorOptions.map((color) => (
+              <button
+                key={color}
+                onClick={() => handleChange('primary_color', color)}
+                className={`w-12 h-12 rounded-lg border-2 transition-all shadow-sm ${
+                  branding.primary_color === color
+                    ? 'border-gray-900 shadow-lg scale-110'
+                    : 'border-gray-300 hover:border-gray-500'
+                }`}
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+          </div>
+          <input
+            type="text"
+            placeholder="#1a5490"
+            value={branding.primary_color || '#1a5490'}
+            onChange={(e) => handleChange('primary_color', e.target.value)}
+            className={`w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-3 transition-colors ${
+              errors.primary_color ? 'border-red-400 bg-red-50' : 'border-gray-200'
+            }`}
+          />
+          {errors.primary_color && <p className="text-sm text-red-600 mt-2">⚠️ {errors.primary_color}</p>}
         </div>
-        <input
-          type="text"
-          placeholder="#1a5490"
-          value={branding.primary_color || '#1a5490'}
-          onChange={(e) => handleChange('primary_color', e.target.value)}
-          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-            errors.primary_color ? 'border-red-400' : 'border-gray-200'
-          }`}
-        />
-        {errors.primary_color && <p className="text-xs text-red-600 mt-1">{errors.primary_color}</p>}
-      </div>
 
-      <div className="space-y-3">
-        <label className="text-xs font-semibold text-gray-700">Color Secundario</label>
-        <input
-          type="text"
-          placeholder="#2c5aa0"
-          value={branding.secondary_color || '#2c5aa0'}
-          onChange={(e) => handleChange('secondary_color', e.target.value)}
-          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-            errors.secondary_color ? 'border-red-400' : 'border-gray-200'
-          }`}
-        />
-        {errors.secondary_color && <p className="text-xs text-red-600 mt-1">{errors.secondary_color}</p>}
+        <div>
+          <label className="text-sm font-semibold text-gray-700 block mb-3">Color Secundario</label>
+          <input
+            type="text"
+            placeholder="#2c5aa0"
+            value={branding.secondary_color || '#2c5aa0'}
+            onChange={(e) => handleChange('secondary_color', e.target.value)}
+            className={`w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+              errors.secondary_color ? 'border-red-400 bg-red-50' : 'border-gray-200'
+            }`}
+          />
+          {errors.secondary_color && <p className="text-sm text-red-600 mt-2">⚠️ {errors.secondary_color}</p>}
+        </div>
       </div>
 
       {/* Fuente */}
-      <div>
-        <label className="text-xs font-semibold text-gray-700 block mb-2">Fuente</label>
+      <div className="pt-4 border-t border-gray-100">
+        <label className="text-sm font-semibold text-gray-700 block mb-3">📝 Fuente</label>
         <select
           value={branding.font_family || 'inter'}
           onChange={(e) => handleChange('font_family', e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors"
         >
           {fonts.map((f) => (
             <option key={f.id} value={f.id}>{f.name}</option>
@@ -127,33 +143,39 @@ export default function BrandingPanel({ branding, onUpdate }) {
       </div>
 
       {/* Dark Mode */}
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold text-gray-700">Modo Oscuro</label>
-        <input
-          type="checkbox"
-          checked={branding.dark_mode || false}
-          onChange={(e) => handleChange('dark_mode', e.target.checked)}
-          className="rounded w-4 h-4 cursor-pointer"
-        />
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div>
+          <label className="text-sm font-semibold text-gray-700">🌙 Modo Oscuro</label>
+          <p className="text-xs text-gray-500 mt-1">Activar tema oscuro</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={branding.dark_mode || false}
+            onChange={(e) => handleChange('dark_mode', e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
       </div>
 
       {/* Posición del Logo */}
-      <div>
-        <label className="text-xs font-semibold text-gray-700 block mb-2">Posición del Logo</label>
+      <div className="pt-4 border-t border-gray-100">
+        <label className="text-sm font-semibold text-gray-700 block mb-3">📍 Posición del Logo</label>
         <div className="flex gap-2">
           {['left', 'center', 'right'].map((pos) => (
             <button
               key={pos}
               onClick={() => handleChange('logo_position', pos)}
-              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                 branding.logo_position === pos
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-400'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:border-blue-400'
               }`}
             >
-              {pos === 'left' && '⟨ Izquierda'}
-              {pos === 'center' && '• Centro'}
-              {pos === 'right' && 'Derecha ⟩'}
+              {pos === 'left' && '← Izq'}
+              {pos === 'center' && '↔ Centro'}
+              {pos === 'right' && 'Der →'}
             </button>
           ))}
         </div>
