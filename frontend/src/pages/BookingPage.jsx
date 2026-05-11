@@ -44,14 +44,14 @@ function ProgressBar({ step }) {
         const active = step === n;
         return (
           <div key={label} className="flex items-center gap-2 flex-1 last:flex-none">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
-              done ? 'bg-indigo-600 text-white' : active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all transform ${
+              done ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' : active ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 text-gray-500'
             }`}>
               {done ? '✓' : n}
             </div>
-            <span className={`text-xs font-medium hidden sm:block ${active ? 'text-slate-900' : 'text-slate-400'}`}>{label}</span>
+            <span className={`text-sm font-semibold hidden sm:block transition-colors ${active ? 'text-gray-900' : done ? 'text-green-600' : 'text-gray-400'}`}>{label}</span>
             {i < STEP_LABELS.length - 1 && (
-              <div className={`flex-1 h-0.5 rounded-full ${done ? 'bg-indigo-600' : 'bg-slate-100'}`} />
+              <div className={`flex-1 h-1 rounded-full transition-all ${done ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gray-200'}`} />
             )}
           </div>
         );
@@ -318,7 +318,7 @@ export default function BookingPage() {
     }
   };
 
-  const inputClass = 'mt-1.5 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50';
+  const inputClass = 'w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all';
 
   // Render template-based layout if page_config exists
   if (profile?.page_config && profile.page_config.sections) {
@@ -355,9 +355,9 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50">
       {/* Left panel */}
-      <div className="lg:w-80 bg-gradient-to-b from-slate-900 to-indigo-900 text-white p-8 lg:p-10 flex flex-col">
+      <div className="lg:w-80 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 text-white p-8 lg:p-10 flex flex-col shadow-xl">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center font-bold text-lg">
             {business.name[0].toUpperCase()}
@@ -406,7 +406,7 @@ export default function BookingPage() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 bg-white p-8 lg:p-12 overflow-auto">
+      <div className="flex-1 bg-white p-8 lg:p-12 overflow-auto lg:border-l lg:border-gray-200">
 
         {/* Step 5: Confirmación */}
         {step === 5 && (
@@ -449,7 +449,7 @@ export default function BookingPage() {
                     <button
                       key={s.id}
                       onClick={() => { setSelectedService(s); setStep(2); }}
-                      className="w-full text-left p-4 border-2 border-slate-100 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group"
+                      className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group hover:shadow-md"
                     >
                       <div className="flex justify-between items-center">
                         <div>
@@ -476,12 +476,12 @@ export default function BookingPage() {
                 <h2 className="text-xl font-bold text-slate-900 mb-1">Elige una fecha</h2>
                 <p className="text-slate-500 text-sm mb-6">Fechas disponibles en los próximos 30 días</p>
                 {availableDates.length === 0 && <p className="text-slate-400 text-sm">No hay fechas disponibles en los próximos 30 días.</p>}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   {availableDates.map((d) => (
                     <button
                       key={d.toISOString()}
                       onClick={() => { setSelectedDate(d); setStep(3); }}
-                      className="p-3 border-2 border-slate-100 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-center group"
+                      className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-center group hover:shadow-md"
                     >
                       <p className="text-xs text-slate-400 capitalize group-hover:text-indigo-500">{DAYS[d.getDay()].slice(0, 3)}</p>
                       <p className="font-bold text-slate-900 text-lg leading-tight">{d.getDate()}</p>
@@ -582,9 +582,16 @@ export default function BookingPage() {
                     onClick={handleSubmit}
                     disabled={submitting || !form.client_name || !form.client_phone ||
                       (business?.specialty && business.specialty !== 'general' && !isValidRut(form.client_rut))}
-                    className="w-full bg-indigo-600 text-white rounded-2xl py-3.5 text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors mt-2"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg py-3 text-sm font-bold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all transform hover:scale-105 active:scale-95 mt-4 shadow-lg"
                   >
-                    {submitting ? 'Agendando...' : 'Confirmar reserva →'}
+                    {submitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Agendando...
+                      </span>
+                    ) : (
+                      '✓ Confirmar reserva'
+                    )}
                   </button>
                 </div>
               </div>
