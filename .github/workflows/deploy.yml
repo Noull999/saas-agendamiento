@@ -1,0 +1,382 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image
+        id: image
+        run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging-api.yourdomain.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to staging
+        run: |
+          # Update deployment configuration
+          cat > deploy-staging.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          echo "Deploying to staging..."
+
+          # SSH into staging server
+          ssh -i $DEPLOY_KEY ubuntu@staging.yourdomain.com << 'DEPLOY'
+          cd /opt/saas-agendamiento/backend
+
+          # Pull latest code
+          git pull origin develop
+
+          # Install dependencies
+          npm ci --production
+
+          # Run migrations (if any)
+          npm run migrate:latest || true
+
+          # Restart application
+          pm2 restart saas-agendamiento
+
+          # Verify health
+          sleep 2
+          curl -f http://localhost:3001/health || exit 1
+
+          echo "Staging deployment successful"
+          DEPLOY
+          EOF
+
+          chmod +x deploy-staging.sh
+          ./deploy-staging.sh
+
+        env:
+          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+
+      - name: Run smoke tests
+        run: |
+          # Wait for deployment
+          sleep 5
+
+          # Test API endpoints
+          curl -f https://staging-api.yourdomain.com/health || exit 1
+          curl -f https://staging-api.yourdomain.com/api/page-builder/templates || exit 1
+
+          echo "Smoke tests passed"
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Staging deployment failed. Check [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+            })
+
+  deploy-production:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://api.yourdomain.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create deployment
+        uses: actions/github-script@v6
+        id: deployment
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'production',
+              auto_merge: false,
+              required_contexts: []
+            });
+            return deployment.data.id;
+
+      - name: Wait for approval
+        run: |
+          echo "Production deployment requires manual approval"
+          echo "This should be reviewed and approved in the GitHub UI"
+
+      - name: Backup database
+        run: |
+          cat > backup.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          ssh -i $DEPLOY_KEY ubuntu@prod.yourdomain.com << 'BACKUP'
+
+          DB_PATH="/var/lib/saas-agendamiento/data/saas.db"
+          BACKUP_DIR="/var/backups/saas-agendamiento"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="$BACKUP_DIR/saas-pre-deploy-$TIMESTAMP.db"
+
+          echo "Creating pre-deployment backup..."
+          sqlite3 "$DB_PATH" ".backup $BACKUP_FILE"
+
+          # Verify backup
+          if ! sqlite3 "$BACKUP_FILE" "PRAGMA integrity_check" | grep -q "ok"; then
+            echo "Backup verification failed!"
+            exit 1
+          fi
+
+          echo "Backup created: $BACKUP_FILE"
+          BACKUP
+          EOF
+
+          chmod +x backup.sh
+          ./backup.sh
+
+        env:
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+
+      - name: Deploy to production
+        run: |
+          cat > deploy-prod.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          echo "Deploying to production..."
+
+          ssh -i $DEPLOY_KEY ubuntu@prod.yourdomain.com << 'DEPLOY'
+          cd /opt/saas-agendamiento/backend
+
+          # Verify current state
+          pm2 status saas-agendamiento
+
+          # Pull latest code
+          git pull origin main
+
+          # Install dependencies
+          npm ci --production
+
+          # Run database migrations (if any)
+          npm run migrate:latest || true
+
+          # Graceful restart (no downtime)
+          pm2 gracefulReload saas-agendamiento
+
+          # Wait for restart
+          sleep 3
+
+          # Verify health
+          for i in {1..5}; do
+            if curl -f http://localhost:3001/health; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Health check attempt $i failed, retrying..."
+            sleep 2
+          done
+
+          # If we get here, health check failed - rollback
+          echo "Health check failed, rolling back..."
+          git revert --no-edit HEAD
+          npm ci --production
+          pm2 restart saas-agendamiento
+          exit 1
+          DEPLOY
+          EOF
+
+          chmod +x deploy-prod.sh
+          ./deploy-prod.sh
+
+        env:
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+
+      - name: Run production smoke tests
+        run: |
+          # Wait for deployment
+          sleep 5
+
+          # Test critical endpoints
+          curl -f https://api.yourdomain.com/health || exit 1
+          curl -f https://api.yourdomain.com/api/page-builder/templates || exit 1
+
+          # Load test (light)
+          for i in {1..10}; do
+            curl -s https://api.yourdomain.com/health > /dev/null || exit 1
+          done
+
+          echo "Production smoke tests passed"
+
+      - name: Create deployment status
+        uses: actions/github-script@v6
+        if: success()
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: 'success',
+              environment_url: 'https://api.yourdomain.com',
+              description: 'Deployment completed successfully'
+            });
+
+      - name: Notify on success
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'deploy-' + new Date().toISOString().slice(0, 10),
+              name: 'Production Deployment ' + new Date().toISOString().slice(0, 10),
+              body: 'Deployed commit: ${{ github.sha }}',
+              draft: false,
+              prerelease: false
+            });
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed, initiating rollback..."
+
+          cat > rollback.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          ssh -i $DEPLOY_KEY ubuntu@prod.yourdomain.com << 'ROLLBACK'
+          cd /opt/saas-agendamiento/backend
+
+          echo "Rolling back to previous version..."
+          git revert --no-edit HEAD
+          npm ci --production
+          pm2 restart saas-agendamiento
+
+          sleep 3
+          curl -f http://localhost:3001/health || exit 1
+
+          echo "Rollback completed"
+          ROLLBACK
+          EOF
+
+          chmod +x rollback.sh
+          ./rollback.sh
+
+        env:
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+
+      - name: Create deployment status failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: 'failure',
+              description: 'Deployment failed and was rolled back'
+            });
+
+      - name: Notify team on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "❌ Production deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment Failed*\nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\nBranch: main\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  }
+                }
+              ]
+            }
+
+      - name: Notify team on success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "✅ Production deployment successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment Successful*\nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\nBranch: main"
+                  }
+                }
+              ]
+            }

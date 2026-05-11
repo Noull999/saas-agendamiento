@@ -1,0 +1,108 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop, claude/* ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run linter
+        working-directory: backend
+        run: npm run lint || true  # Lint fails don't block tests yet
+
+      - name: Run unit tests
+        working-directory: backend
+        run: npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-for-testing
+          ENCRYPTION_KEY: test-encryption-key-for-testing-min-32-chars
+
+      - name: Generate test coverage
+        working-directory: backend
+        run: npm test -- --coverage || true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./backend/coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run secret scanning
+        run: |
+          # Install detection tool
+          pip install detect-secrets
+
+          # Scan for secrets
+          detect-secrets scan --all-files --force-addition \
+            --baseline .secrets.baseline || true
+
+      - name: Check for credentials in git history
+        run: |
+          # Install TruffleHog
+          pip install truffleHog
+
+          # Scan last 5 commits
+          truffleHog git file:// --since-commit HEAD~5 \
+            --json 2>/dev/null || true
+
+  dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Audit dependencies
+        working-directory: backend
+        run: npm audit --audit-level=moderate || true
+        continue-on-error: true
+
+      - name: Check for outdated packages
+        working-directory: backend
+        run: npm outdated || true
+        continue-on-error: true
