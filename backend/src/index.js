@@ -8,6 +8,7 @@ if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
 require('./db/database');
 
 const express = require('express');
+const compression = require('compression');
 const { startReminderJob } = require('./jobs/reminders');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -19,6 +20,9 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 // Security headers
 app.use(helmet());
+
+// Compression middleware - reduce response size
+app.use(compression());
 
 // CORS: solo permite el frontend local en dev, o el dominio configurado en prod
 const allowedOrigins = isDev

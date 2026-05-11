@@ -172,4 +172,17 @@ db.exec(`
   "ALTER TABLE bookings ADD COLUMN client_rut TEXT"
 ].forEach(sql => { try { db.exec(sql); } catch (_) {} });
 
+// Create indexes for improved query performance
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_services_business_id ON services(business_id);
+  CREATE INDEX IF NOT EXISTS idx_schedules_business_id ON schedules(business_id);
+  CREATE INDEX IF NOT EXISTS idx_bookings_business_id ON bookings(business_id);
+  CREATE INDEX IF NOT EXISTS idx_bookings_business_date ON bookings(business_id, date(datetime_iso));
+  CREATE INDEX IF NOT EXISTS idx_professionals_business_id ON professionals(business_id);
+  CREATE INDEX IF NOT EXISTS idx_patients_business_id ON patients(business_id);
+  CREATE INDEX IF NOT EXISTS idx_consultations_business_id ON consultations(business_id);
+  CREATE INDEX IF NOT EXISTS idx_consultations_patient_id ON consultations(patient_id);
+  CREATE INDEX IF NOT EXISTS idx_page_templates_template_id ON page_templates(template_id);
+`);
+
 module.exports = db;

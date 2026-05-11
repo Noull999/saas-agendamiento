@@ -1,4 +1,7 @@
-export default function TemplatePreview({ template, branding, sections, sectionOrder }) {
+import { memo } from 'react';
+import { getFontFamily } from '../../utils/validation';
+
+function TemplatePreview({ template, branding, sections, sectionOrder }) {
   const getCSSVars = () => {
     const vars = {
       '--primary-color': branding.primary_color || '#1a5490',
@@ -8,16 +11,6 @@ export default function TemplatePreview({ template, branding, sections, sectionO
     return Object.entries(vars)
       .map(([key, value]) => `${key}: ${value}`)
       .join(';');
-  };
-
-  const getFontFamily = (fontId) => {
-    const fonts = {
-      inter: "'Inter', sans-serif",
-      poppins: "'Poppins', sans-serif",
-      roboto: "'Roboto', sans-serif",
-      playfair: "'Playfair Display', serif"
-    };
-    return fonts[fontId] || fonts.inter;
   };
 
   const visibleSections = (sectionOrder || []).filter(id => sections[id]?.enabled);
@@ -117,3 +110,5 @@ function getLogoPosition(position) {
   };
   return positions[position] || 'start';
 }
+
+export default memo(TemplatePreview);

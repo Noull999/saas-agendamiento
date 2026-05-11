@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import TemplateSelector from './TemplateSelector';
 
@@ -81,26 +81,26 @@ export default function ThemeBuilder() {
     });
   };
 
-  const handleTemplateSelect = (templateId) => {
+  const handleTemplateSelect = useCallback((templateId) => {
     setSelectedTemplate(templateId);
-  };
+  }, []);
 
-  const handleBrandingUpdate = (newBranding) => {
+  const handleBrandingUpdate = useCallback((newBranding) => {
     setBranding(newBranding);
-  };
+  }, []);
 
-  const handleSectionsUpdate = (newSections) => {
+  const handleSectionsUpdate = useCallback((newSections) => {
     setSections(newSections);
-  };
+  }, []);
 
-  const handleSectionReorder = (newOrder) => {
-    setSections({
-      ...sections,
+  const handleSectionReorder = useCallback((newOrder) => {
+    setSections((prev) => ({
+      ...prev,
       section_order: newOrder
-    });
-  };
+    }));
+  }, []);
 
-  const saveConfig = async () => {
+  const saveConfig = useCallback(async () => {
     setIsSaving(true);
     setError('');
     setSuccessMessage('');
@@ -134,7 +134,7 @@ export default function ThemeBuilder() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [selectedTemplate, branding, sections]);
 
   if (isLoading) {
     return (
