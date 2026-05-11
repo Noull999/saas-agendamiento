@@ -7,7 +7,7 @@ import { Section, Container, SectionTitle } from '../components/ui/Section';
 const STATUS_LABELS = {
   confirmed: { label: 'Confirmada', color: 'bg-emerald-100 text-emerald-700' },
   cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-600' },
-  completed: { label: 'Completada', color: 'bg-slate-100 text-slate-600' },
+  completed: { label: 'Completada', color: 'bg-gray-100 text-gray-600' },
   no_show: { label: 'No asistió', color: 'bg-amber-100 text-amber-700' },
 };
 
@@ -103,7 +103,7 @@ export default function Bookings() {
   const formatTime = (iso) => new Date(iso).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
   const confirmed = bookings.filter(b => b.status === 'confirmed').length;
 
-  const inputClass = 'w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
+  const inputClass = 'w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -112,14 +112,14 @@ export default function Bookings() {
         <Container>
           <div className="flex items-center justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Reservas del Día</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">📅 Reservas del Día</h1>
               <p className="text-gray-600">Gestiona y controla todas las citas de tu negocio en tiempo real</p>
             </div>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 whitespace-nowrap"
+              className="border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent whitespace-nowrap transition-all"
             />
           </div>
         </Container>
@@ -267,10 +267,10 @@ export default function Bookings() {
                   <p className="text-gray-400 text-sm mb-4">No encontrado</p>
                 )}
                 <button onClick={() => setShowNewPatient(true)} className="text-sm text-blue-600 hover:text-blue-700 font-medium mb-4">
-                  + Crear nuevo paciente
+                  ➕ Crear nuevo paciente
                 </button>
                 <div className="flex gap-3">
-                  <button onClick={() => setLinkModal(null)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
+                  <button onClick={() => setLinkModal(null)} className="flex-1 border-2 border-gray-200 rounded-lg py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">Cancelar</button>
                 </div>
               </>
             ) : (
@@ -288,13 +288,18 @@ export default function Bookings() {
                   <input value={newPatientForm.phone} onChange={e => setNewPatientForm({ ...newPatientForm, phone: e.target.value })} className={inputClass} />
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={() => setShowNewPatient(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Atrás</button>
+                  <button onClick={() => setShowNewPatient(false)} className="flex-1 border-2 border-gray-200 rounded-lg py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">Atrás</button>
                   <button
                     onClick={() => createAndLink(linkModal)}
                     disabled={linkSaving || !newPatientForm.name}
-                    className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg py-2.5 text-sm font-bold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all shadow-lg"
                   >
-                    {linkSaving ? 'Guardando...' : 'Crear y vincular'}
+                    {linkSaving ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Guardando...
+                      </span>
+                    ) : '✓ Crear y vincular'}
                   </button>
                 </div>
               </div>
