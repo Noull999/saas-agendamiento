@@ -7,7 +7,7 @@ const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','ago
 // Perfil público de un negocio (para la página de reservas)
 router.get('/:slug', (req, res) => {
   const business = db.prepare(
-    'SELECT id, slug, name, phone, specialty FROM businesses WHERE slug = ?'
+    'SELECT id, slug, name, phone, specialty, template_id, page_config FROM businesses WHERE slug = ?'
   ).get(req.params.slug);
 
   if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
@@ -22,7 +22,22 @@ router.get('/:slug', (req, res) => {
 
   const schedules = scheduleRows.map(r => ({ dow: r.dow, slots: JSON.parse(r.slots) }));
 
-  res.json({ business, services, schedules });
+  // Parse page_config if exists
+  const pageConfig = business.page_config ? JSON.parse(business.page_config) : {};
+
+  res.json({
+    business: {
+      id: business.id,
+      slug: business.slug,
+      name: business.name,
+      phone: business.phone,
+      specialty: business.specialty,
+      template_id: business.template_id || 'modern_minimal',
+      page_config: pageConfig
+    },
+    services,
+    schedules
+  });
 });
 
 // Slots disponibles (para el bot de WhatsApp y BookingPage)

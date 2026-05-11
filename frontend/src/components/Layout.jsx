@@ -16,6 +16,7 @@ export default function Layout({ children }) {
     { to: '/dashboard/pacientes', label: 'Pacientes', icon: '👤' },
     ...(isPro ? [{ to: '/dashboard/profesionales', label: 'Profesionales', icon: '👥' }] : []),
     { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
+    { to: '/dashboard/diseño', label: 'Diseño Página', icon: '🎨' },
     { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
   ];
 

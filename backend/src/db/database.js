@@ -62,10 +62,62 @@ db.exec(`
 `);
 
 [
-  "ALTER TABLE businesses ADD COLUMN description TEXT DEFAULT ''"
+  "ALTER TABLE businesses ADD COLUMN description TEXT DEFAULT ''",
+  "ALTER TABLE businesses ADD COLUMN template_id TEXT DEFAULT 'modern_minimal'",
+  "ALTER TABLE businesses ADD COLUMN page_config TEXT DEFAULT '{}'"
 ].forEach(sql => {
   try { db.exec(sql); } catch (_) {}
 });
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS page_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    template_id TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    default_config TEXT DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// Seed data: 5 templates
+const existingTemplates = db.prepare('SELECT COUNT(*) as count FROM page_templates').get();
+if (existingTemplates.count === 0) {
+  const templates = [
+    {
+      template_id: 'modern_minimal',
+      name: 'Modern Minimal',
+      description: 'Diseño limpio y profesional con 2 columnas. Ideal para consultorías y servicios profesionales.'
+    },
+    {
+      template_id: 'full_width',
+      name: 'Full Width Flow',
+      description: 'Layout fluido de una sola columna. Perfecto para clínicas y servicios médicos.'
+    },
+    {
+      template_id: 'hero_focus',
+      name: 'Hero Focus',
+      description: 'Imagen hero grande y llamativa. Ideal para salones de belleza y spas.'
+    },
+    {
+      template_id: 'gallery_style',
+      name: 'Gallery Style',
+      description: 'Galería visual tipo Pinterest. Perfecto para servicios creativos y fotografía.'
+    },
+    {
+      template_id: 'luxury_premium',
+      name: 'Luxury Premium',
+      description: 'Diseño elegante y sofisticado. Para servicios de lujo y premium.'
+    }
+  ];
+
+  const stmt = db.prepare(
+    'INSERT INTO page_templates (template_id, name, description, default_config) VALUES (?, ?, ?, ?)'
+  );
+  templates.forEach(t => {
+    stmt.run(t.template_id, t.name, t.description, '{}');
+  });
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS professionals (

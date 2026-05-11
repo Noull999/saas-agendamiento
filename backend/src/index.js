@@ -80,6 +80,7 @@ app.use('/api/bookings', require('./routes/bookings.routes'));
 app.use('/api/public', require('./routes/public.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
 app.use('/api/analytics', require('./routes/analytics.routes'));
+app.use('/api/page-builder', require('./routes/page-builder.routes'));
 app.use('/api/patients', require('./routes/patients.routes'));
 app.use('/api/consultations', require('./routes/consultations.routes'));
 app.use('/api/prescriptions', require('./routes/prescriptions.routes'));
