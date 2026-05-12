@@ -3,6 +3,16 @@ const { notifyBooking } = require('../services/whatsapp');
 
 const VALID_STATUSES = ['confirmed', 'cancelled', 'completed', 'no_show'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function clipString(v, max) {
+  if (v == null) return null;
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.slice(0, max);
+}
 
 const list = (req, res) => {
   const { date, status } = req.query;
@@ -111,13 +121,29 @@ const publicCreate = (req, res) => {
   const business = db.prepare('SELECT * FROM businesses WHERE slug = ?').get(slug);
   if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
 
-  const { client_name, client_email, client_phone, client_rut, service_id, datetime_iso, notes } = req.body;
-  if (!client_name || !datetime_iso) {
-    return res.status(400).json({ error: 'client_name y datetime_iso son requeridos' });
+  // Validación + recorte de campos públicos (anti-spam / anti-payload-grande)
+  const name = clipString(req.body.client_name, 100);
+  if (!name) return res.status(400).json({ error: 'client_name es requerido' });
+
+  const datetime_iso = req.body.datetime_iso;
+  if (!datetime_iso || typeof datetime_iso !== 'string' || !DATETIME_RE.test(datetime_iso)) {
+    return res.status(400).json({ error: 'datetime_iso inválido' });
   }
 
-  if (service_id) {
-    const service = db.prepare('SELECT id FROM services WHERE id = ? AND business_id = ?').get(service_id, business.id);
+  const email = clipString(req.body.client_email, 254);
+  if (email && !EMAIL_RE.test(email)) return res.status(400).json({ error: 'email inválido' });
+
+  const phone = clipString(req.body.client_phone, 30);
+  const rut = clipString(req.body.client_rut, 20);
+  const notes = clipString(req.body.notes, 500);
+  const serviceId = req.body.service_id;
+
+  if (serviceId !== undefined && serviceId !== null && !Number.isInteger(serviceId)) {
+    return res.status(400).json({ error: 'service_id inválido' });
+  }
+
+  if (serviceId) {
+    const service = db.prepare('SELECT id FROM services WHERE id = ? AND business_id = ?').get(serviceId, business.id);
     if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
   }
 
@@ -129,18 +155,18 @@ const publicCreate = (req, res) => {
   const result = db.prepare(`
     INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut)
     VALUES (?, ?, ?, ?, ?, ?, ?, 'web', ?)
-  `).run(business.id, service_id || null, client_name, client_email || null, client_phone || null, datetime_iso, notes || null, client_rut || null);
+  `).run(business.id, serviceId || null, name, email, phone, datetime_iso, notes, rut);
 
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
 
-  const serviceRow = service_id
-    ? db.prepare('SELECT name FROM services WHERE id = ?').get(service_id)
+  const serviceRow = serviceId
+    ? db.prepare('SELECT name FROM services WHERE id = ?').get(serviceId)
     : null;
 
   notifyBooking({
-    clientName: client_name,
-    clientPhone: client_phone || null,
-    clientEmail: client_email || null,
+    clientName: name,
+    clientPhone: phone,
+    clientEmail: email,
     serviceName: serviceRow?.name || null,
     datetimeISO: datetime_iso,
     businessName: business.name,
@@ -154,7 +180,14 @@ const updateBooking = (req, res) => {
   if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
   const { patient_id } = req.body;
   if (patient_id !== undefined) {
-    db.prepare('UPDATE bookings SET patient_id = ? WHERE id = ?').run(patient_id || null, req.params.id);
+    let safePatientId = null;
+    if (patient_id) {
+      // Verifica que el paciente pertenece a este negocio (evita link cross-tenant)
+      const owned = db.prepare('SELECT id FROM patients WHERE id = ? AND business_id = ?').get(patient_id, req.business.id);
+      if (!owned) return res.status(404).json({ error: 'Paciente no encontrado' });
+      safePatientId = owned.id;
+    }
+    db.prepare('UPDATE bookings SET patient_id = ? WHERE id = ?').run(safePatientId, req.params.id);
   }
   res.json(db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id));
 };
