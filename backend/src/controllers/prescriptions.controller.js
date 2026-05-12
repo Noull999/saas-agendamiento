@@ -1,9 +1,14 @@
 const db = require('../db/database');
 const { encrypt, decrypt } = require('../lib/crypto');
+const { auditLog }         = require('../lib/audit');
+
+const MAX_CONTENT = 10000;
 
 const create = (req, res) => {
   const { consultation_id, content } = req.body;
   if (!consultation_id || !content) return res.status(400).json({ error: 'consultation_id y content son requeridos' });
+  if (typeof content === 'string' && content.length > MAX_CONTENT)
+    return res.status(400).json({ error: 'content excede el límite permitido' });
 
   const consultation = db.prepare('SELECT * FROM consultations WHERE id = ? AND business_id = ?').get(consultation_id, req.business.id);
   if (!consultation) return res.status(404).json({ error: 'Consulta no encontrada' });
@@ -19,10 +24,11 @@ const getById = (req, res) => {
     SELECT pr.*, c.business_id
     FROM prescriptions pr
     JOIN consultations c ON pr.consultation_id = c.id
-    WHERE pr.id = ?
-  `).get(req.params.id);
+    WHERE pr.id = ? AND c.business_id = ?
+  `).get(req.params.id, req.business.id);
 
-  if (!row || row.business_id !== req.business.id) return res.status(404).json({ error: 'Receta no encontrada' });
+  if (!row) return res.status(404).json({ error: 'Receta no encontrada' });
+  auditLog(req.business.id, 'VIEW_PRESCRIPTION', 'prescription', row.id, req.ip);
   row.content = decrypt(row.content);
   res.json(row);
 };
@@ -32,10 +38,11 @@ const downloadPdf = (req, res) => {
     SELECT pr.*, c.business_id, c.patient_id
     FROM prescriptions pr
     JOIN consultations c ON pr.consultation_id = c.id
-    WHERE pr.id = ?
-  `).get(req.params.id);
+    WHERE pr.id = ? AND c.business_id = ?
+  `).get(req.params.id, req.business.id);
 
-  if (!row || row.business_id !== req.business.id) return res.status(404).json({ error: 'Receta no encontrada' });
+  if (!row) return res.status(404).json({ error: 'Receta no encontrada' });
+  auditLog(req.business.id, 'DOWNLOAD_PRESCRIPTION', 'prescription', row.id, req.ip);
 
   const content = decrypt(row.content);
   const patient = db.prepare('SELECT name, rut FROM patients WHERE id = ?').get(row.patient_id);

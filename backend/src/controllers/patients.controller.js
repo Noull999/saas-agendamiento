@@ -1,6 +1,7 @@
 const db = require('../db/database');
 const { encrypt, decrypt } = require('../lib/crypto');
 const { isValidRut }       = require('../lib/rut');
+const { auditLog }         = require('../lib/audit');
 
 const list = (req, res) => {
   const { search, page = '1', limit = '20' } = req.query;
@@ -35,6 +36,7 @@ const list = (req, res) => {
 const getById = (req, res) => {
   const patient = db.prepare('SELECT * FROM patients WHERE id = ? AND business_id = ?').get(req.params.id, req.business.id);
   if (!patient) return res.status(404).json({ error: 'Paciente no encontrado' });
+  auditLog(req.business.id, 'VIEW_PATIENT', 'patient', patient.id, req.ip);
 
   if (patient.allergies) patient.allergies = decrypt(patient.allergies);
   if (patient.background) patient.background = decrypt(patient.background);
@@ -52,6 +54,8 @@ const getById = (req, res) => {
   res.json({ ...patient, recent_consultations: consultations });
 };
 
+const MAX_TEXT = 5000;
+
 const create = (req, res) => {
   const { rut, name, birth_date, phone, email, allergies, background, notes } = req.body;
   // Read vertical from DB — JWT may be stale if user changed vertical in Settings
@@ -59,6 +63,10 @@ const create = (req, res) => {
   const isBelleza = (biz?.vertical || 'salud') === 'belleza';
 
   if (!name) return res.status(400).json({ error: 'name es requerido' });
+  if (allergies && typeof allergies === 'string' && allergies.length > MAX_TEXT)
+    return res.status(400).json({ error: 'allergies excede el límite permitido' });
+  if (background && typeof background === 'string' && background.length > MAX_TEXT)
+    return res.status(400).json({ error: 'background excede el límite permitido' });
 
   let safeRut;
   if (isBelleza) {
@@ -91,6 +99,10 @@ const update = (req, res) => {
   if (!patient) return res.status(404).json({ error: 'Paciente no encontrado' });
 
   const { name, birth_date, phone, email, allergies, background, notes } = req.body;
+  if (allergies && typeof allergies === 'string' && allergies.length > MAX_TEXT)
+    return res.status(400).json({ error: 'allergies excede el límite permitido' });
+  if (background && typeof background === 'string' && background.length > MAX_TEXT)
+    return res.status(400).json({ error: 'background excede el límite permitido' });
 
   db.prepare(`
     UPDATE patients SET name = ?, birth_date = ?, phone = ?, email = ?, allergies = ?, background = ?, notes = ?
@@ -139,6 +151,7 @@ const history = (req, res) => {
 const exportData = (req, res) => {
   const patient = db.prepare('SELECT * FROM patients WHERE id = ? AND business_id = ?').get(req.params.id, req.business.id);
   if (!patient) return res.status(404).json({ error: 'Paciente no encontrado' });
+  auditLog(req.business.id, 'EXPORT_PATIENT', 'patient', patient.id, req.ip);
 
   if (patient.allergies) patient.allergies = decrypt(patient.allergies);
   if (patient.background) patient.background = decrypt(patient.background);

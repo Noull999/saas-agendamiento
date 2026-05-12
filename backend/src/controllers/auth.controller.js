@@ -16,7 +16,13 @@ function slugify(name) {
 
 function generateToken(business) {
   return jwt.sign(
-    { id: business.id, email: business.owner_email, slug: business.slug, vertical: business.vertical || 'salud' },
+    {
+      id: business.id,
+      email: business.owner_email,
+      slug: business.slug,
+      vertical: business.vertical || 'salud',
+      tv: business.token_version ?? 0,
+    },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -193,4 +199,9 @@ const resetPassword = (req, res) => {
   res.json({ ok: true });
 };
 
-module.exports = { register, login, me, forgotPassword, resetPassword };
+const logout = (req, res) => {
+  db.prepare('UPDATE businesses SET token_version = token_version + 1 WHERE id = ?').run(req.business.id);
+  res.json({ ok: true });
+};
+
+module.exports = { register, login, me, forgotPassword, resetPassword, logout };

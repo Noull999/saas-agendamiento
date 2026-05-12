@@ -121,7 +121,22 @@ db.exec(`
   "ALTER TABLE bookings ADD COLUMN client_rut TEXT",
   "ALTER TABLE patients ADD COLUMN notes TEXT",
   "ALTER TABLE businesses ADD COLUMN reset_token TEXT",
-  "ALTER TABLE businesses ADD COLUMN reset_token_expires TEXT"
+  "ALTER TABLE businesses ADD COLUMN reset_token_expires TEXT",
+  "ALTER TABLE bookings ADD COLUMN cancel_token TEXT",
+  "ALTER TABLE businesses ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0"
 ].forEach(sql => { try { db.exec(sql); } catch (_) {} });
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL,
+    action      TEXT    NOT NULL,
+    resource    TEXT    NOT NULL,
+    resource_id INTEGER,
+    ip          TEXT,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_audit_logs_business ON audit_logs(business_id, created_at);
+`);
 
 module.exports = db;

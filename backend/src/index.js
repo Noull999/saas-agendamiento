@@ -25,8 +25,21 @@ const PORT = process.env.PORT || 3001;
 // Si NODE_ENV no está seteado, asumimos producción (no relajar rate limits).
 const isDev = process.env.NODE_ENV === 'development';
 
+// Confiar en el proxy inverso (Nginx/Caddy) para leer X-Forwarded-Proto e IP real
+if (!isDev) app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
+
+// Redirigir HTTP → HTTPS en producción
+if (!isDev) {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] === 'http') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
 
 // CORS: solo permite el frontend local en dev, o el dominio configurado en prod
 const allowedOrigins = isDev

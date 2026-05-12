@@ -25,6 +25,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    api.post('/auth/logout').catch(() => {});
     localStorage.removeItem('token');
     localStorage.removeItem('business');
     setBusiness(null);

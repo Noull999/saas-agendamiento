@@ -8,7 +8,9 @@ import Login          from './pages/Login';
 import Register        from './pages/Register';
 import ForgotPassword  from './pages/ForgotPassword';
 import ResetPassword   from './pages/ResetPassword';
-import BookingPage     from './pages/BookingPage'; // pública, sin auth
+import BookingPage        from './pages/BookingPage';        // pública, sin auth
+import CancelBookingPage  from './pages/CancelBookingPage';  // pública, sin auth
+import MyBookingsPage     from './pages/MyBookingsPage';     // pública, sin auth
 
 // Carga diferida: páginas del dashboard (~95% del bundle)
 // Se descargan solo cuando el usuario navega a ellas por primera vez
@@ -71,8 +73,10 @@ function App() {
             <Route path="/dashboard/profesionales"   element={<Protected><Layout><Professionals /></Layout></Protected>} />
             <Route path="/dashboard/clientes"        element={<Protected><Layout><Clients /></Layout></Protected>} />
 
-            <Route path="/book/:slug" element={<BookingPage />} />
-            <Route path="*"           element={<Navigate to="/dashboard" replace />} />
+            <Route path="/book/:slug"            element={<BookingPage />} />
+            <Route path="/book/:slug/mis-citas" element={<MyBookingsPage />} />
+            <Route path="/cancel/:token"        element={<CancelBookingPage />} />
+            <Route path="*"                     element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

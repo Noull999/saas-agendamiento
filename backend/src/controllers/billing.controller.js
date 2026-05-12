@@ -69,7 +69,8 @@ const webhook = (req, res) => {
     const session    = event.data.object;
     const { business_id, plan } = session.metadata || {};
 
-    if (business_id && plan) {
+    const VALID_PLANS = ['pro', 'clinica'];
+    if (business_id && VALID_PLANS.includes(plan)) {
       db.prepare('UPDATE businesses SET plan = ? WHERE id = ?').run(plan, parseInt(business_id));
       console.log(`[billing] Plan actualizado a '${plan}' para business #${business_id}`);
     }

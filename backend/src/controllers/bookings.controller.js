@@ -1,5 +1,7 @@
 const db = require('../db/database');
+const { randomUUID } = require('node:crypto');
 const { notifyBooking } = require('../services/whatsapp');
+const { sendBookingConfirmation } = require('../services/email');
 
 const VALID_STATUSES = ['confirmed', 'cancelled', 'completed', 'no_show'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,6 +29,13 @@ const list = (req, res) => {
     if (!DATE_RE.test(date)) return res.status(400).json({ error: 'formato de fecha inválido (YYYY-MM-DD)' });
     where += ' AND date(b.datetime_iso) = ?';
     params.push(date);
+  }
+
+  const { from } = req.query;
+  if (from) {
+    if (!DATE_RE.test(from)) return res.status(400).json({ error: 'formato de fecha inválido (YYYY-MM-DD)' });
+    where += ' AND date(b.datetime_iso) >= ?';
+    params.push(from);
   }
   if (status) {
     if (!VALID_STATUSES.includes(status)) return res.status(400).json({ error: `status debe ser uno de: ${VALID_STATUSES.join(', ')}` });
@@ -129,6 +138,9 @@ const publicCreate = (req, res) => {
   if (!datetime_iso || typeof datetime_iso !== 'string' || !DATETIME_RE.test(datetime_iso)) {
     return res.status(400).json({ error: 'datetime_iso inválido' });
   }
+  if (new Date(datetime_iso) <= new Date()) {
+    return res.status(400).json({ error: 'No se puede reservar en una fecha pasada' });
+  }
 
   const email = clipString(req.body.client_email, 254);
   if (email && !EMAIL_RE.test(email)) return res.status(400).json({ error: 'email inválido' });
@@ -147,17 +159,31 @@ const publicCreate = (req, res) => {
     if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
   }
 
-  const conflict = db.prepare(
-    "SELECT id FROM bookings WHERE business_id = ? AND datetime_iso = ? AND status != 'cancelled'"
-  ).get(business.id, datetime_iso);
-  if (conflict) return res.status(409).json({ error: 'Ese horario ya no está disponible' });
+  const cancelToken = randomUUID();
+  let booking;
+  try {
+    db.exec('BEGIN IMMEDIATE');
+    const conflict = db.prepare(
+      "SELECT id FROM bookings WHERE business_id = ? AND datetime_iso = ? AND status != 'cancelled'"
+    ).get(business.id, datetime_iso);
 
-  const result = db.prepare(`
-    INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'web', ?)
-  `).run(business.id, serviceId || null, name, email, phone, datetime_iso, notes, rut);
+    if (conflict) {
+      db.exec('ROLLBACK');
+      return res.status(409).json({ error: 'Ese horario ya no está disponible' });
+    }
 
-  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
+    const result = db.prepare(`
+      INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut, cancel_token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'web', ?, ?)
+    `).run(business.id, serviceId || null, name, email, phone, datetime_iso, notes, rut, cancelToken);
+
+    booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
+    db.exec('COMMIT');
+  } catch (err) {
+    try { db.exec('ROLLBACK'); } catch (_) {}
+    console.error('[bookings] Error al crear reserva:', err.message);
+    return res.status(500).json({ error: 'Error interno al crear la reserva' });
+  }
 
   const serviceRow = serviceId
     ? db.prepare('SELECT name FROM services WHERE id = ?').get(serviceId)
@@ -172,7 +198,16 @@ const publicCreate = (req, res) => {
     businessName: business.name,
   }).catch(err => console.error('[whatsapp] Error enviando notificación:', err));
 
-  res.status(201).json({ ok: true, booking_id: booking.id, datetime_iso: booking.datetime_iso });
+  sendBookingConfirmation({
+    clientName: name,
+    clientEmail: email,
+    serviceName: serviceRow?.name || null,
+    datetimeISO: datetime_iso,
+    businessName: business.name,
+    cancelToken,
+  }).catch(err => console.error('[email] Error enviando confirmación:', err));
+
+  res.status(201).json({ ok: true, booking_id: booking.id, datetime_iso: booking.datetime_iso, cancel_token: cancelToken });
 };
 
 const updateBooking = (req, res) => {

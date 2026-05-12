@@ -55,14 +55,33 @@ export default function BookingPage() {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [form, setForm] = useState({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [cancelToken, setCancelToken] = useState(null);
 
   useEffect(() => {
     axios.get(`/api/public/${slug}`)
       .then(({ data }) => setProfile(data))
       .catch(() => setError('Negocio no encontrado'));
   }, [slug]);
+
+  useEffect(() => {
+    if (!selectedDate || !selectedService) return;
+    setAvailableSlots([]);
+    setLoadingSlots(true);
+    const dateStr = selectedDate.toISOString().slice(0, 10);
+    axios.get(`/api/public/${slug}/slots`, {
+      params: { date: dateStr, days: 1, service_id: selectedService.id },
+    })
+      .then(({ data }) => {
+        const day = data.find(d => d.date === dateStr);
+        setAvailableSlots(day ? day.slots : []);
+      })
+      .catch(() => setAvailableSlots([]))
+      .finally(() => setLoadingSlots(false));
+  }, [selectedDate, selectedService, slug]);
 
   if (error) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -85,16 +104,12 @@ export default function BookingPage() {
     return sched && sched.slots.length > 0;
   });
 
-  const slotsForDate = selectedDate
-    ? (schedules.find((s) => s.dow === selectedDate.getDay())?.slots || [])
-    : [];
-
   const handleSubmit = async () => {
     if (!form.client_name) return;
     setSubmitting(true);
     try {
       const datetime_iso = `${selectedDate.toISOString().slice(0, 10)}T${selectedSlot}:00`;
-      await axios.post(`/api/bookings/public/${slug}`, {
+      const { data } = await axios.post(`/api/bookings/public/${slug}`, {
         client_name: form.client_name,
         client_email: form.client_email || undefined,
         client_phone: form.client_phone || undefined,
@@ -103,6 +118,7 @@ export default function BookingPage() {
         datetime_iso,
         notes: form.notes || undefined,
       });
+      if (data.cancel_token) setCancelToken(data.cancel_token);
       setStep(5);
     } catch (err) {
       alert(err.response?.data?.error || 'Error al agendar');
@@ -179,13 +195,34 @@ export default function BookingPage() {
               {selectedSlot && <div className="flex justify-between"><span className="text-slate-500">Hora</span><span className="font-medium">{selectedSlot} hrs</span></div>}
               <div className="flex justify-between"><span className="text-slate-500">Nombre</span><span className="font-medium">{form.client_name}</span></div>
             </div>
-            {form.client_phone && (
-              <p className="text-sm text-indigo-600 bg-indigo-50 rounded-xl px-4 py-3 mb-6">
-                📱 Te enviaremos la confirmación al {form.client_phone}
+            {(form.client_phone || form.client_email) && (
+              <p className="text-sm text-indigo-600 bg-indigo-50 rounded-xl px-4 py-3 mb-4">
+                {form.client_email
+                  ? `📧 Enviamos la confirmación a ${form.client_email}`
+                  : `📱 Te enviaremos la confirmación al ${form.client_phone}`}
               </p>
             )}
+
+            {/* Links útiles para el paciente */}
+            <div className="flex flex-col gap-2 mb-6">
+              <a
+                href={`/book/${slug}/mis-citas`}
+                className="block text-center text-sm bg-white border border-slate-200 rounded-xl py-2.5 text-slate-700 hover:bg-slate-50 font-medium"
+              >
+                📅 Ver mis citas
+              </a>
+              {cancelToken && (
+                <a
+                  href={`/cancel/${cancelToken}`}
+                  className="block text-center text-sm text-slate-400 hover:text-red-500 py-1"
+                >
+                  Cancelar esta reserva
+                </a>
+              )}
+            </div>
+
             <button
-              onClick={() => { setStep(1); setSelectedService(null); setSelectedDate(null); setSelectedSlot(null); setForm({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' }); }}
+              onClick={() => { setStep(1); setSelectedService(null); setSelectedDate(null); setSelectedSlot(null); setCancelToken(null); setForm({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' }); }}
               className="text-sm text-indigo-600 hover:underline"
             >
               Agendar otra hora
@@ -259,17 +296,27 @@ export default function BookingPage() {
                 </button>
                 <h2 className="text-xl font-bold text-slate-900 mb-1">Elige un horario</h2>
                 <p className="text-slate-500 text-sm mb-6">Horarios disponibles para el día seleccionado</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {slotsForDate.map((slot) => (
-                    <button
-                      key={slot}
-                      onClick={() => { setSelectedSlot(slot); setStep(4); }}
-                      className="py-3 border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 transition-all"
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
+                {loadingSlots && (
+                  <div className="flex justify-center py-8">
+                    <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {!loadingSlots && availableSlots.length === 0 && (
+                  <p className="text-slate-400 text-sm">No hay horarios disponibles para este día.</p>
+                )}
+                {!loadingSlots && availableSlots.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        onClick={() => { setSelectedSlot(slot); setStep(4); }}
+                        className="py-3 border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 transition-all"
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

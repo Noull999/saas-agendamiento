@@ -27,7 +27,7 @@ const create = (req, res) => {
 };
 
 const update = (req, res) => {
-  const prof = db.prepare('SELECT * FROM professionals WHERE id = ? AND business_id = ?').get(req.params.id, req.business.id);
+  const prof = db.prepare('SELECT * FROM professionals WHERE id = ? AND business_id = ? AND active = 1').get(req.params.id, req.business.id);
   if (!prof) return res.status(404).json({ error: 'Profesional no encontrado' });
 
   const { name, specialty, email } = req.body;
