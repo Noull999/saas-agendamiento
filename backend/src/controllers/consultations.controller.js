@@ -42,6 +42,11 @@ const create = (req, res) => {
     if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
   }
 
+  if (professional_id) {
+    const prof = db.prepare('SELECT id FROM professionals WHERE id = ? AND business_id = ?').get(professional_id, req.business.id);
+    if (!prof) return res.status(404).json({ error: 'Profesional no encontrado' });
+  }
+
   const result = db.prepare(`
     INSERT INTO consultations (business_id, patient_id, booking_id, professional_id, notes, diagnosis, treatment)
     VALUES (?, ?, ?, ?, ?, ?, ?)

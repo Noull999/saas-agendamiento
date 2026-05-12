@@ -6,11 +6,26 @@ Todo el código está listo. Solo faltan estas variables de entorno en el servid
 
 ## 1. ENCRYPTION_KEY (obligatorio — sin esto el servidor no arranca)
 
-```
-ENCRYPTION_KEY=47feef1db5a4b23e68586119a7fe04850ce2f7f862c7fabfbe635c46112babc5
+> ⚠️ NUNCA comitees la clave real. Genérala SOLO en el servidor / gestor de secretos.
+
+Generar (64 hex chars = 32 bytes):
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Guarda esta clave en un lugar seguro. Si se pierde, los datos clínicos encriptados quedan irrecuperables.
+Configurar como variable de entorno (Vercel/host) — no en el repo:
+
+```
+ENCRYPTION_KEY=<el valor generado>
+```
+
+Guarda esta clave en un gestor de secretos. Si se pierde, los datos clínicos
+encriptados quedan irrecuperables.
+
+> Si una clave fue comiteada previamente, se considera comprometida: rotar de
+> inmediato, descifrar/recifrar los registros existentes con la nueva clave y
+> purgar la historia de git (`git filter-repo` o BFG).
 
 ---
 

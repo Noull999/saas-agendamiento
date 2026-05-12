@@ -115,6 +115,17 @@ function getMailer() {
   });
 }
 
+// Escapa para insertar texto del usuario en HTML (email del reset).
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 const forgotPassword = async (req, res) => {
   const { owner_email } = req.body;
   if (!owner_email || !EMAIL_RE.test(owner_email)) {
@@ -127,14 +138,18 @@ const forgotPassword = async (req, res) => {
 
   if (!business) return res.json({ ok: true });
 
+  // Token plano va al email; en DB sólo guardamos su sha256 (si la DB se filtra, no sirve).
   const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashToken(token);
   const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
   db.prepare('UPDATE businesses SET reset_token = ?, reset_token_expires = ? WHERE id = ?').run(
-    token, expires, business.id
+    tokenHash, expires, business.id
   );
 
   const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+  const safeName = escapeHtml(business.name);
+  const safeUrl = escapeHtml(resetUrl);
 
   try {
     await getMailer().sendMail({
@@ -142,7 +157,7 @@ const forgotPassword = async (req, res) => {
       to: business.owner_email,
       subject: 'Recuperar contraseña — AgendaSaaS',
       text: `Hola ${business.name},\n\nHaz clic en el siguiente enlace para restablecer tu contraseña (válido por 1 hora):\n\n${resetUrl}\n\nSi no solicitaste esto, ignora este email.`,
-      html: `<p>Hola <strong>${business.name}</strong>,</p><p>Haz clic aquí para restablecer tu contraseña (válido por 1 hora):</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Si no solicitaste esto, ignora este email.</p>`,
+      html: `<p>Hola <strong>${safeName}</strong>,</p><p>Haz clic aquí para restablecer tu contraseña (válido por 1 hora):</p><p><a href="${safeUrl}">${safeUrl}</a></p><p>Si no solicitaste esto, ignora este email.</p>`,
     });
   } catch (err) {
     console.error('[auth] Error enviando email de reset:', err.message);
@@ -154,13 +169,16 @@ const forgotPassword = async (req, res) => {
 const resetPassword = (req, res) => {
   const { token, password } = req.body;
   if (!token || !password) return res.status(400).json({ error: 'token y password son requeridos' });
+  if (typeof token !== 'string' || token.length < 16 || token.length > 256) {
+    return res.status(400).json({ error: 'Token inválido o expirado' });
+  }
   if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
     return res.status(400).json({ error: 'la contraseña debe tener entre 8 y 128 caracteres' });
   }
 
   const business = db.prepare(
     'SELECT id, reset_token_expires FROM businesses WHERE reset_token = ?'
-  ).get(token);
+  ).get(hashToken(token));
 
   if (!business) return res.status(400).json({ error: 'Token inválido o expirado' });
   if (new Date(business.reset_token_expires) < new Date()) {

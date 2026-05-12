@@ -14,11 +14,12 @@ describe('encrypt', () => {
     expect(encrypt('hola').length).toBeGreaterThan(0);
   });
 
-  test('tiene formato iv:ciphertext (un solo ":")', () => {
+  test('tiene formato iv:tag:ciphertext (AES-GCM)', () => {
     const result = encrypt('test');
     const parts  = result.split(':');
-    expect(parts).toHaveLength(2);
-    expect(parts[0]).toHaveLength(32); // 16 bytes en hex
+    expect(parts).toHaveLength(3);
+    expect(parts[0]).toHaveLength(24); // IV de 12 bytes en hex
+    expect(parts[1]).toHaveLength(32); // GCM tag de 16 bytes en hex
   });
 
   test('genera IV distinto en cada llamada (no determinista)', () => {

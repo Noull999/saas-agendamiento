@@ -5,6 +5,12 @@ if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
   process.exit(1);
 }
 
+// JWT_SECRET es la base de toda la autenticación: exigir longitud mínima.
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('[FATAL] JWT_SECRET no configurada o muy corta (mínimo 32 caracteres)');
+  process.exit(1);
+}
+
 require('./db/database');
 
 const express = require('express');
@@ -15,7 +21,9 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const isDev = process.env.NODE_ENV !== 'production';
+// Fail-safe: solo activar modo dev cuando se pide explícitamente.
+// Si NODE_ENV no está seteado, asumimos producción (no relajar rate limits).
+const isDev = process.env.NODE_ENV === 'development';
 
 // Security headers
 app.use(helmet());
@@ -71,6 +79,8 @@ const bookingLimiter = rateLimit({
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/bookings/public', bookingLimiter);
 
 app.use('/api/auth', require('./routes/auth.routes'));
