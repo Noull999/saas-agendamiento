@@ -7,7 +7,8 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "jest --testPathPatterns='src/__tests__'",
-    "test:watch": "jest --watch --testPathPatterns='src/__tests__'"
+    "test:watch": "jest --watch --testPathPatterns='src/__tests__'",
+    "seed:demo": "node seed-demo.js"
   },
   "jest": {
     "testEnvironment": "node",
