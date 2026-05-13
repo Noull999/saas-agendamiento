@@ -1,6 +1,5 @@
 const db = require('../db/database');
 
-// Stripe se inicializa solo si la clave está configurada
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY no configurada');
@@ -9,20 +8,20 @@ function getStripe() {
 }
 
 const PLAN_PRICE_IDS = {
-  pro:     process.env.STRIPE_PRICE_PRO,
-  clinica: process.env.STRIPE_PRICE_CLINICA,
+  pro:      process.env.STRIPE_PRICE_PRO,
+  business: process.env.STRIPE_PRICE_BUSINESS,
 };
 
 // POST /api/billing/checkout
-// Body: { plan: 'pro' | 'clinica' }
+// Body: { plan: 'pro' | 'business' }
 const createCheckout = async (req, res) => {
   try {
-    const stripe = getStripe();
+    const stripe  = getStripe();
     const { plan } = req.body;
     const priceId  = PLAN_PRICE_IDS[plan];
 
     if (!priceId) {
-      return res.status(400).json({ error: 'Plan inválido. Valores aceptados: pro, clinica' });
+      return res.status(400).json({ error: 'Plan inválido. Valores aceptados: pro, business' });
     }
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -66,10 +65,10 @@ const webhook = (req, res) => {
   }
 
   if (event.type === 'checkout.session.completed') {
-    const session    = event.data.object;
+    const session = event.data.object;
     const { business_id, plan } = session.metadata || {};
 
-    const VALID_PLANS = ['pro', 'clinica'];
+    const VALID_PLANS = ['pro', 'business'];
     if (business_id && VALID_PLANS.includes(plan)) {
       db.prepare('UPDATE businesses SET plan = ? WHERE id = ?').run(plan, parseInt(business_id));
       console.log(`[billing] Plan actualizado a '${plan}' para business #${business_id}`);
@@ -77,7 +76,6 @@ const webhook = (req, res) => {
   }
 
   if (event.type === 'customer.subscription.deleted') {
-    // Downgrade a basic si cancela la suscripción
     const sub = event.data.object;
     const businessId = sub.metadata?.business_id;
     if (businessId) {
@@ -89,32 +87,52 @@ const webhook = (req, res) => {
   res.json({ received: true });
 };
 
-// GET /api/billing/plans  — precios/features de cada plan (no requiere Stripe)
+// GET /api/billing/plans
 const getPlans = (_req, res) => {
   res.json({
     plans: [
       {
         id:       'basic',
-        name:     'Básico',
-        price:    0,
+        name:     'Basic',
+        price:    9990,
         currency: 'CLP',
-        features: ['Agenda ilimitada', 'Reservas públicas', 'Hasta 2 servicios'],
+        features: [
+          '1 profesional',
+          'Hasta 100 reservas/mes',
+          'Página de reservas pública',
+          'Soporte por email',
+        ],
       },
       {
         id:       'pro',
         name:     'Pro',
         price:    19990,
         currency: 'CLP',
-        features: ['Todo lo de Básico', 'Notificaciones WhatsApp', 'Analytics', 'Profesionales múltiples'],
+        highlight: true,
+        features: [
+          'Todo lo de Basic',
+          'Recordatorios WhatsApp automáticos',
+          'Historial de clientes y pacientes',
+          'Consultas y fichas clínicas',
+          'Hasta 5 profesionales',
+          'Analytics de ingresos',
+          'Soporte prioritario',
+        ],
         stripePriceId: PLAN_PRICE_IDS.pro || null,
       },
       {
-        id:       'clinica',
-        name:     'Clínica',
-        price:    49990,
+        id:       'business',
+        name:     'Business',
+        price:    34990,
         currency: 'CLP',
-        features: ['Todo lo de Pro', 'Expediente clínico', 'Recetas digitales', 'Historial de pacientes'],
-        stripePriceId: PLAN_PRICE_IDS.clinica || null,
+        features: [
+          'Todo lo de Pro',
+          'Bot IA para reservar por WhatsApp',
+          'Profesionales ilimitados',
+          'Múltiples sedes',
+          'Onboarding personalizado',
+        ],
+        stripePriceId: PLAN_PRICE_IDS.business || null,
       },
     ],
   });

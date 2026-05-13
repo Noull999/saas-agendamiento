@@ -34,7 +34,16 @@ const getSummary = (req, res) => {
     LIMIT 5
   `).all(id, fromDate, toDate);
 
-  res.json({ totals, byDay, byService, from: fromDate, to: toDate });
+  const revenueRow = db.prepare(`
+    SELECT COALESCE(SUM(s.price), 0) as revenue
+    FROM bookings b
+    JOIN services s ON s.id = b.service_id
+    WHERE b.business_id = ?
+      AND date(b.datetime_iso) BETWEEN ? AND ?
+      AND b.status IN ('confirmed', 'completed')
+  `).get(id, fromDate, toDate);
+
+  res.json({ totals, byDay, byService, revenue: revenueRow.revenue, from: fromDate, to: toDate });
 };
 
 module.exports = { getSummary };

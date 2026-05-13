@@ -69,7 +69,7 @@ function isoDate(d) {
 }
 
 // ─── Calendar week view ─────────────────────────────────────────────────────
-function CalendarView({ bookings, onChangeStatus, onLinkClick, navigate }) {
+function CalendarView({ bookings, navigate }) {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -123,7 +123,7 @@ function CalendarView({ bookings, onChangeStatus, onLinkClick, navigate }) {
 
       {/* 7-column grid */}
       <div className="grid grid-cols-7 gap-1.5">
-        {days.map((day, i) => {
+        {days.map((day) => {
           const key   = isoDate(day);
           const items = byDate[key] || [];
           const isToday = key === todayStr;
@@ -287,7 +287,7 @@ export default function Bookings() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <p className="text-sm text-slate-500 mb-1">Total próximas</p>
           <p className="text-3xl font-bold text-slate-900">{bookings.length}</p>
@@ -299,6 +299,19 @@ export default function Bookings() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <p className="text-sm text-slate-500 mb-1">Con ficha</p>
           <p className="text-3xl font-bold text-indigo-600">{bookings.filter(b => b.patient_id).length}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <div className="flex items-center gap-1.5 mb-1">
+            <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/>
+            </svg>
+            <p className="text-sm text-slate-500">Recordatorios enviados</p>
+          </div>
+          <p className="text-3xl font-bold text-green-600">{bookings.filter(b => b.reminder_sent).length}</p>
+          <p className="text-xs text-slate-400 mt-1">
+            {bookings.length - bookings.filter(b => b.reminder_sent).length} pendientes
+          </p>
         </div>
       </div>
 
@@ -345,7 +358,26 @@ export default function Bookings() {
                       <p className="text-slate-400 text-xs">
                         {b.service_name || 'Sin servicio'}{b.duration_min ? ` · ${b.duration_min} min` : ''}{b.client_phone ? ` · ${b.client_phone}` : ''}
                       </p>
-                      <div className="mt-1">
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        {/* Origen de la reserva */}
+                        {b.source === 'whatsapp' && (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/></svg>
+                            WhatsApp
+                          </span>
+                        )}
+                        {/* Recordatorio WhatsApp */}
+                        {b.reminder_sent ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/></svg>
+                            Recordatorio enviado
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/></svg>
+                            Recordatorio pendiente
+                          </span>
+                        )}
                         {b.patient_name ? (
                           <button
                             onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
@@ -363,6 +395,7 @@ export default function Bookings() {
                         )}
                       </div>
                     </div>
+
                     <div className="text-indigo-600 font-bold text-sm shrink-0">{formatTime(b.datetime_iso)}</div>
                     <div className="flex items-center gap-2 shrink-0">
                       {b.patient_id && (

@@ -17,5 +17,11 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Patrón load() dentro de useEffect es válido para fetching de datos
+      'react-hooks/set-state-in-effect': 'off',
+      // AuthContext exporta provider + hook en el mismo archivo (patrón estándar)
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
   },
 ])

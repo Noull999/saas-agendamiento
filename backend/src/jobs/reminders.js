@@ -26,6 +26,7 @@ async function sendReminders() {
         AND  b.status   = 'confirmed'
         AND  b.datetime_iso >= ?
         AND  b.datetime_iso <= ?
+        AND  bs.plan IN ('pro', 'business')
     `).all(from, to);
   } catch (err) {
     console.error('[reminders] Error al consultar bookings:', err.message);

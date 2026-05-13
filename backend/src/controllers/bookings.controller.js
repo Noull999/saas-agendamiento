@@ -159,6 +159,9 @@ const publicCreate = (req, res) => {
     if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
   }
 
+  const VALID_SOURCES = ['web', 'whatsapp', 'phone', 'other'];
+  const source = VALID_SOURCES.includes(req.body.source) ? req.body.source : 'web';
+
   const cancelToken = randomUUID();
   let booking;
   try {
@@ -174,8 +177,8 @@ const publicCreate = (req, res) => {
 
     const result = db.prepare(`
       INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut, cancel_token)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'web', ?, ?)
-    `).run(business.id, serviceId || null, name, email, phone, datetime_iso, notes, rut, cancelToken);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(business.id, serviceId || null, name, email, phone, datetime_iso, notes, source, rut, cancelToken);
 
     booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
     db.exec('COMMIT');

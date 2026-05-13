@@ -139,4 +139,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_audit_logs_business ON audit_logs(business_id, created_at);
 `);
 
+// Migrar plan 'clinica' → 'business' (renombrado en v2)
+try { db.exec("UPDATE businesses SET plan = 'business' WHERE plan = 'clinica'"); } catch (_) {}
+
 module.exports = db;

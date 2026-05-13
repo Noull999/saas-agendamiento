@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { VERTICALS } from '../config/verticals.config';
 
 export default function Settings() {
-  const { business, updateBusiness } = useAuth();
+  const { updateBusiness } = useAuth();
   const [form, setForm] = useState({ name: '', phone: '', description: '', vertical: 'salud' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
