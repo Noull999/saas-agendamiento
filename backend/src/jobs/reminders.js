@@ -4,7 +4,7 @@
  * La ventana de 2h (±1h alrededor de las 24h) evita duplicados aunque el job se desfase.
  */
 
-const db             = require('../db/database');
+const pool = require('../db/database');
 const { notifyReminder } = require('../services/whatsapp');
 
 const INTERVAL_MS = 30 * 60 * 1000; // cada 30 minutos
@@ -16,18 +16,18 @@ async function sendReminders() {
 
   let bookings;
   try {
-    bookings = db.prepare(`
-      SELECT b.id, b.client_name, b.client_phone, b.client_email,
-             b.datetime_iso, s.name AS service_name, bs.name AS business_name
-      FROM   bookings b
-      LEFT JOIN services    s  ON b.service_id   = s.id
-      LEFT JOIN businesses  bs ON b.business_id  = bs.id
-      WHERE  b.reminded = 0
-        AND  b.status   = 'confirmed'
-        AND  b.datetime_iso >= ?
-        AND  b.datetime_iso <= ?
-        AND  bs.plan IN ('pro', 'business')
-    `).all(from, to);
+    const result = await pool.query(`
+      SELECT b.id, b.patient_rut, b.booking_date, b.booking_time,
+             s.name AS service_name, bs.email AS business_email
+      FROM bookings b
+      LEFT JOIN services s ON b.service_id = s.id
+      LEFT JOIN businesses bs ON b.business_id = bs.id
+      WHERE b.reminder_sent = false
+        AND b.status = 'confirmed'
+        AND CONCAT(b.booking_date, 'T', b.booking_time) >= $1
+        AND CONCAT(b.booking_date, 'T', b.booking_time) <= $2
+    `, [from, to]);
+    bookings = result.rows;
   } catch (err) {
     console.error('[reminders] Error al consultar bookings:', err.message);
     return;
@@ -36,18 +36,16 @@ async function sendReminders() {
   for (const booking of bookings) {
     try {
       await notifyReminder({
-        clientName:   booking.client_name,
-        clientPhone:  booking.client_phone,
-        clientEmail:  booking.client_email,
-        serviceName:  booking.service_name,
-        datetimeISO:  booking.datetime_iso,
-        businessName: booking.business_name,
+        patientRut: booking.patient_rut,
+        serviceName: booking.service_name,
+        bookingDate: booking.booking_date,
+        bookingTime: booking.booking_time,
+        businessEmail: booking.business_email,
       });
-      db.prepare('UPDATE bookings SET reminded = 1 WHERE id = ?').run(booking.id);
-      console.log(`[reminders] Recordatorio enviado: booking #${booking.id} (${booking.client_name})`);
+      await pool.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [booking.id]);
+      console.log(`[reminders] Recordatorio enviado: booking #${booking.id}`);
     } catch (err) {
       console.error(`[reminders] Fallo en booking #${booking.id}:`, err.message);
-      // No marcamos reminded=1; se reintentará en la próxima ejecución
     }
   }
 

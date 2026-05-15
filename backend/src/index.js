@@ -1,17 +1,43 @@
 require('dotenv').config();
 
-if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
-  console.error('[FATAL] ENCRYPTION_KEY no configurada o muy corta (mínimo 32 caracteres)');
-  process.exit(1);
+function validateSecret(name, minLength = 32) {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`[FATAL] ${name} no configurada. Usa: openssl rand -hex 32`);
+    process.exit(1);
+  }
+  if (value.length < minLength) {
+    console.error(`[FATAL] ${name} debe tener mínimo ${minLength} caracteres`);
+    process.exit(1);
+  }
+  if (value.includes('CHANGE_ME') || value === 'example') {
+    console.error(`[FATAL] ${name} aún contiene valor de ejemplo. Configura un valor real`);
+    process.exit(1);
+  }
 }
 
-// JWT_SECRET es la base de toda la autenticación: exigir longitud mínima.
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  console.error('[FATAL] JWT_SECRET no configurada o muy corta (mínimo 32 caracteres)');
-  process.exit(1);
+validateSecret('JWT_SECRET', 32);
+validateSecret('ENCRYPTION_KEY', 32);
+
+console.log('[STARTUP] Secretos validados correctamente');
+
+// Initialize Sentry for error tracking in production
+if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  const Sentry = require('@sentry/node');
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    tracesSampleRate: 0.1, // 10% de requests
+    integrations: [
+      new Sentry.Integrations.Http({ tracing: true }),
+      new Sentry.Integrations.OnUncaughtException(),
+      new Sentry.Integrations.OnUnhandledRejection(),
+    ],
+  });
 }
 
-require('./db/database');
+// Initialize PostgreSQL connection pool
+const pool = require('./db/database');
 
 const express = require('express');
 const { startReminderJob } = require('./jobs/reminders');
@@ -30,6 +56,13 @@ if (!isDev) app.set('trust proxy', 1);
 
 // Security headers
 app.use(helmet());
+
+// Sentry request handler (si está configurado en production)
+if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  const Sentry = require('@sentry/node');
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
+}
 
 // Redirigir HTTP → HTTPS en producción
 if (!isDev) {
@@ -90,11 +123,30 @@ const bookingLimiter = rateLimit({
   message: { error: 'Demasiadas reservas en poco tiempo, intenta en 1 minuto' },
 });
 
+// Rate limiting estricto para cancel endpoint (previene enumeration de tokens)
+const cancelLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 1, // 1 intento por IP
+  skip: () => isDev,
+  message: { error: 'Demasiados intentos de cancelación. Intenta en 5 minutos' },
+});
+
+// Rate limiting para portal de pacientes (previene brute force de teléfonos)
+const patientPortalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // 10 búsquedas por teléfono/slug
+  skip: () => isDev,
+  keyGenerator: (req) => `${req.params.slug}:${req.query.phone}`, // Por slug+phone
+  message: { error: 'Demasiadas búsquedas. Intenta en 15 minutos' },
+});
+
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/bookings/public', bookingLimiter);
+app.use('/api/public/cancel', cancelLimiter);
+app.use('/api/public/:slug/mis-citas', patientPortalLimiter);
 
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/services', require('./routes/services.routes'));
@@ -111,6 +163,12 @@ app.use('/api/professionals', require('./routes/professionals.routes'));
 app.use('/api/billing', require('./routes/billing.routes'));
 
 app.get('/health', (_, res) => res.json({ ok: true }));
+
+// Sentry error handler (si está configurado en production)
+if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  const Sentry = require('@sentry/node');
+  app.use(Sentry.Handlers.errorHandler());
+}
 
 // Error handler — nunca expone detalles internos al cliente
 app.use((err, req, res, next) => {
