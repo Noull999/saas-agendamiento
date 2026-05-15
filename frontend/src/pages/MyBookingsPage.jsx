@@ -1,144 +1,143 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
-const DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-const MONTHS_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-
-function formatDatetime(iso) {
-  const d    = new Date(iso);
-  const day  = DAYS_ES[d.getDay()];
-  const date = d.getDate();
-  const mon  = MONTHS_ES[d.getMonth()];
-  const time = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-  return `${day} ${date} ${mon} · ${time} hrs`;
-}
-
-const STATUS = {
-  confirmed: { label: 'Confirmada', color: 'bg-emerald-100 text-emerald-700' },
-  completed: { label: 'Completada', color: 'bg-slate-100 text-slate-500'    },
-  no_show:   { label: 'No asistió', color: 'bg-amber-100 text-amber-700'   },
-};
-
 export default function MyBookingsPage() {
   const { slug } = useParams();
-  const [phone,    setPhone]    = useState('');
-  const [result,   setResult]   = useState(null);  // { business, bookings }
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
-  const [searched, setSearched] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [bookings, setBookings] = useState(null);
+  const [businessName, setBusinessName] = useState(null);
+  const [error, setError] = useState(null);
 
-  const search = async (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
-    if (!phone.trim()) return;
-    setLoading(true);
-    setError('');
+    setSearching(true);
+    setError(null);
     try {
-      const { data } = await axios.get(`/api/public/${slug}/mis-citas`, { params: { phone: phone.trim() } });
-      setResult(data);
-      setSearched(true);
+      const res = await axios.get(`/api/public/${slug}/mis-citas?phone=${encodeURIComponent(phone)}`);
+      setBookings(res.data.bookings);
+      setBusinessName(res.data.business.name);
     } catch (err) {
       setError(err.response?.data?.error || 'Error al buscar tus citas');
+      setBookings([]);
     } finally {
-      setLoading(false);
+      setSearching(false);
     }
   };
 
+  const formatDateTime = (isoStr) => {
+    const date = new Date(isoStr);
+    return date.toLocaleDateString('es-CL', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      confirmed: 'Confirmada',
+      pending: 'Pendiente',
+      completed: 'Completada',
+      cancelled: 'Cancelada'
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      confirmed: 'bg-blue-100 text-blue-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      completed: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-start py-12 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Citas</h1>
+        <p className="text-gray-600 mb-8">Ingresa tu número de teléfono para ver tus próximas citas</p>
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">📅</div>
-          <h1 className="text-2xl font-bold text-slate-900">Mis citas</h1>
-          <p className="text-slate-500 text-sm mt-1">Consulta tus próximas reservas</p>
-        </div>
-
-        {/* Search form */}
-        <form onSubmit={search} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-          <label className="block text-xs font-semibold text-slate-700 mb-2">
-            Número de teléfono WhatsApp
-          </label>
+        <form onSubmit={handleSearch} className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex gap-2">
             <input
               type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
               placeholder="+56 9 1234 5678"
-              className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             />
             <button
               type="submit"
-              disabled={loading || !phone.trim()}
-              className="bg-indigo-600 text-white rounded-xl px-5 py-2.5 text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              disabled={searching}
+              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 font-medium"
             >
-              {loading ? '…' : 'Buscar'}
+              {searching ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
-          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
-          <p className="text-slate-400 text-xs mt-2">
-            Ingresa el mismo número con el que hiciste la reserva.
-          </p>
         </form>
 
-        {/* Results */}
-        {searched && result && (
-          <div>
-            {result.bookings.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center shadow-sm">
-                <p className="text-3xl mb-2">📭</p>
-                <p className="text-slate-500 text-sm">No tienes citas próximas en <strong>{result.business.name}</strong>.</p>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        {bookings !== null && (
+          <>
+            {businessName && (
+              <p className="text-sm text-gray-600 mb-4">
+                Citas en <strong>{businessName}</strong>
+              </p>
+            )}
+
+            {bookings.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                <p className="text-gray-600 mb-4">No tienes citas próximas registradas</p>
                 <Link
                   to={`/book/${slug}`}
-                  className="inline-block mt-4 text-sm text-indigo-600 hover:underline"
+                  className="text-blue-500 hover:underline"
                 >
-                  Agendar una cita →
+                  Agendar una cita
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-400 font-medium uppercase tracking-wide px-1">
-                  {result.bookings.length} cita{result.bookings.length !== 1 ? 's' : ''} próxima{result.bookings.length !== 1 ? 's' : ''} en {result.business.name}
-                </p>
-                {result.bookings.map(b => (
-                  <div key={b.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-900 text-sm capitalize">
-                          {formatDatetime(b.datetime_iso)}
+              <div className="space-y-4">
+                {bookings.map((booking) => (
+                  <div key={booking.id} className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {booking.service_name || 'Servicio'}
+                        </h3>
+                        <p className="text-gray-600 text-sm">
+                          {formatDateTime(booking.datetime_iso)}
                         </p>
-                        {b.service_name && (
-                          <p className="text-slate-400 text-xs mt-0.5">{b.service_name}</p>
-                        )}
                       </div>
-                      <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS[b.status]?.color || 'bg-slate-100 text-slate-500'}`}>
-                        {STATUS[b.status]?.label || b.status}
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
+                        {getStatusLabel(booking.status)}
                       </span>
                     </div>
-                    {b.cancel_token && b.status === 'confirmed' && (
-                      <div className="mt-3 pt-3 border-t border-slate-100">
-                        <Link
-                          to={`/cancel/${b.cancel_token}`}
-                          className="text-xs text-red-500 hover:text-red-700 hover:underline"
-                        >
-                          Cancelar esta cita
-                        </Link>
-                      </div>
+                    {booking.status === 'confirmed' && booking.cancel_token && (
+                      <Link
+                        to={`/cancel/${booking.cancel_token}`}
+                        className="inline-block px-4 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm font-medium transition"
+                      >
+                        Cancelar Cita
+                      </Link>
                     )}
                   </div>
                 ))}
-                <div className="text-center pt-2">
-                  <Link
-                    to={`/book/${slug}`}
-                    className="text-sm text-indigo-600 hover:underline"
-                  >
-                    + Agendar nueva cita
-                  </Link>
-                </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>

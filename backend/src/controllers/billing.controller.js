@@ -1,4 +1,4 @@
-const db = require('../db/database');
+const pool = require('../db/database');
 
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -46,45 +46,50 @@ const createCheckout = async (req, res) => {
 };
 
 // POST /api/billing/webhook  (raw body — ver billing.routes.js)
-const webhook = (req, res) => {
-  const sig    = req.headers['stripe-signature'];
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!secret) {
-    console.error('[billing] STRIPE_WEBHOOK_SECRET no configurado');
-    return res.status(500).json({ error: 'Webhook no configurado' });
-  }
-
-  let event;
+const webhook = async (req, res) => {
   try {
-    const stripe = getStripe();
-    event = stripe.webhooks.constructEvent(req.body, sig, secret);
+    const sig    = req.headers['stripe-signature'];
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!secret) {
+      console.error('[billing] STRIPE_WEBHOOK_SECRET no configurado');
+      return res.status(500).json({ error: 'Webhook no configurado' });
+    }
+
+    let event;
+    try {
+      const stripe = getStripe();
+      event = stripe.webhooks.constructEvent(req.body, sig, secret);
+    } catch (err) {
+      console.error('[billing] Firma de webhook inválida:', err.message);
+      return res.status(400).json({ error: `Webhook error: ${err.message}` });
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const { business_id, plan } = session.metadata || {};
+
+      const VALID_PLANS = ['pro', 'business'];
+      if (business_id && VALID_PLANS.includes(plan)) {
+        await pool.query('UPDATE businesses SET plan = $1 WHERE id = $2', [plan, parseInt(business_id)]);
+        console.log(`[billing] Plan actualizado a '${plan}' para business #${business_id}`);
+      }
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+      const sub = event.data.object;
+      const businessId = sub.metadata?.business_id;
+      if (businessId) {
+        await pool.query('UPDATE businesses SET plan = $1 WHERE id = $2', ['basic', parseInt(businessId)]);
+        console.log(`[billing] Plan revertido a 'basic' para business #${businessId}`);
+      }
+    }
+
+    res.json({ received: true });
   } catch (err) {
-    console.error('[billing] Firma de webhook inválida:', err.message);
-    return res.status(400).json({ error: `Webhook error: ${err.message}` });
+    console.error('[billing] Webhook error:', err);
+    res.status(500).json({ error: 'Error procesando webhook' });
   }
-
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const { business_id, plan } = session.metadata || {};
-
-    const VALID_PLANS = ['pro', 'business'];
-    if (business_id && VALID_PLANS.includes(plan)) {
-      db.prepare('UPDATE businesses SET plan = ? WHERE id = ?').run(plan, parseInt(business_id));
-      console.log(`[billing] Plan actualizado a '${plan}' para business #${business_id}`);
-    }
-  }
-
-  if (event.type === 'customer.subscription.deleted') {
-    const sub = event.data.object;
-    const businessId = sub.metadata?.business_id;
-    if (businessId) {
-      db.prepare("UPDATE businesses SET plan = 'basic' WHERE id = ?").run(parseInt(businessId));
-      console.log(`[billing] Plan revertido a 'basic' para business #${businessId}`);
-    }
-  }
-
-  res.json({ received: true });
 };
 
 // GET /api/billing/plans
