@@ -1,22 +1,17 @@
-/**
- * Job de recordatorios WhatsApp
- * Corre cada 30 minutos y envía un mensaje a clientes con citas en las próximas 23-25 horas.
- * La ventana de 2h (±1h alrededor de las 24h) evita duplicados aunque el job se desfase.
- */
-
 const db             = require('../db/database');
 const { notifyReminder } = require('../services/whatsapp');
 
 const INTERVAL_MS = 30 * 60 * 1000; // cada 30 minutos
+let intervalId = null;
 
 async function sendReminders() {
   const now  = Date.now();
-  const from = new Date(now + 23 * 60 * 60 * 1000).toISOString(); // 23h desde ahora
-  const to   = new Date(now + 25 * 60 * 60 * 1000).toISOString(); // 25h desde ahora
+  const from = new Date(now + 23 * 60 * 60 * 1000).toISOString();
+  const to   = new Date(now + 25 * 60 * 60 * 1000).toISOString();
 
   let bookings;
   try {
-    bookings = db.prepare(`
+    const { rows } = await db.query(`
       SELECT b.id, b.client_name, b.client_phone, b.client_email,
              b.datetime_iso, s.name AS service_name, bs.name AS business_name
       FROM   bookings b
@@ -24,10 +19,11 @@ async function sendReminders() {
       LEFT JOIN businesses  bs ON b.business_id  = bs.id
       WHERE  b.reminded = 0
         AND  b.status   = 'confirmed'
-        AND  b.datetime_iso >= ?
-        AND  b.datetime_iso <= ?
+        AND  b.datetime_iso >= $1
+        AND  b.datetime_iso <= $2
         AND  bs.plan IN ('pro', 'business')
-    `).all(from, to);
+    `, [from, to]);
+    bookings = rows;
   } catch (err) {
     console.error('[reminders] Error al consultar bookings:', err.message);
     return;
@@ -43,11 +39,10 @@ async function sendReminders() {
         datetimeISO:  booking.datetime_iso,
         businessName: booking.business_name,
       });
-      db.prepare('UPDATE bookings SET reminded = 1 WHERE id = ?').run(booking.id);
+      await db.query('UPDATE bookings SET reminded = 1 WHERE id = $1', [booking.id]);
       console.log(`[reminders] Recordatorio enviado: booking #${booking.id} (${booking.client_name})`);
     } catch (err) {
       console.error(`[reminders] Fallo en booking #${booking.id}:`, err.message);
-      // No marcamos reminded=1; se reintentará en la próxima ejecución
     }
   }
 
@@ -57,12 +52,19 @@ async function sendReminders() {
 }
 
 function startReminderJob() {
-  // Ejecutar inmediatamente al iniciar (útil para no perder citas tras un reinicio)
   sendReminders().catch(err => console.error('[reminders] Error inicial:', err.message));
-  setInterval(() => {
+  intervalId = setInterval(() => {
     sendReminders().catch(err => console.error('[reminders] Error en ciclo:', err.message));
   }, INTERVAL_MS);
   console.log('[reminders] Job iniciado — revisa recordatorios cada 30 min');
 }
 
-module.exports = { startReminderJob };
+function stopReminderJob() {
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
+    console.log('[reminders] Job detenido');
+  }
+}
+
+module.exports = { startReminderJob, stopReminderJob };

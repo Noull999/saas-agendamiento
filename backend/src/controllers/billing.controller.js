@@ -13,7 +13,6 @@ const PLAN_PRICE_IDS = {
 };
 
 // POST /api/billing/checkout
-// Body: { plan: 'pro' | 'business' }
 const createCheckout = async (req, res) => {
   try {
     const stripe  = getStripe();
@@ -46,7 +45,7 @@ const createCheckout = async (req, res) => {
 };
 
 // POST /api/billing/webhook  (raw body — ver billing.routes.js)
-const webhook = (req, res) => {
+const webhook = async (req, res) => {
   const sig    = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -64,24 +63,47 @@ const webhook = (req, res) => {
     return res.status(400).json({ error: `Webhook error: ${err.message}` });
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const { business_id, plan } = session.metadata || {};
-
-    const VALID_PLANS = ['pro', 'business'];
-    if (business_id && VALID_PLANS.includes(plan)) {
-      db.prepare('UPDATE businesses SET plan = ? WHERE id = ?').run(plan, parseInt(business_id));
-      console.log(`[billing] Plan actualizado a '${plan}' para business #${business_id}`);
+  // Idempotency: skip already-processed events
+  try {
+    const { rows: existing } = await db.query(
+      'SELECT stripe_event_id FROM stripe_webhook_events WHERE stripe_event_id = $1',
+      [event.id]
+    );
+    if (existing.length) {
+      return res.json({ received: true, duplicate: true });
     }
+    await db.query(
+      'INSERT INTO stripe_webhook_events (stripe_event_id, processed_at) VALUES ($1, NOW())',
+      [event.id]
+    );
+  } catch (err) {
+    console.error('[billing] Error al verificar idempotencia:', err.message);
+    // Continue processing — better to process twice than skip
   }
 
-  if (event.type === 'customer.subscription.deleted') {
-    const sub = event.data.object;
-    const businessId = sub.metadata?.business_id;
-    if (businessId) {
-      db.prepare("UPDATE businesses SET plan = 'basic' WHERE id = ?").run(parseInt(businessId));
-      console.log(`[billing] Plan revertido a 'basic' para business #${businessId}`);
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const { business_id, plan } = session.metadata || {};
+
+      const VALID_PLANS = ['pro', 'business'];
+      if (business_id && VALID_PLANS.includes(plan)) {
+        await db.query('UPDATE businesses SET plan = $1 WHERE id = $2', [plan, parseInt(business_id)]);
+        console.log(`[billing] Plan actualizado a '${plan}' para business #${business_id}`);
+      }
     }
+
+    if (event.type === 'customer.subscription.deleted') {
+      const sub = event.data.object;
+      const businessId = sub.metadata?.business_id;
+      if (businessId) {
+        await db.query("UPDATE businesses SET plan = 'basic' WHERE id = $1", [parseInt(businessId)]);
+        console.log(`[billing] Plan revertido a 'basic' para business #${businessId}`);
+      }
+    }
+  } catch (err) {
+    console.error('[billing] Error procesando webhook:', err.message);
+    return res.status(500).json({ error: 'Error procesando webhook' });
   }
 
   res.json({ received: true });
