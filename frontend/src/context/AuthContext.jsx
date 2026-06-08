@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/client';
 
 const AuthContext = createContext(null);
@@ -7,6 +7,26 @@ export function AuthProvider({ children }) {
   const [business, setBusiness] = useState(() => {
     try { return JSON.parse(localStorage.getItem('business')); } catch { return null; }
   });
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setAuthChecked(true);
+      return;
+    }
+    api.get('/auth/me')
+      .then(({ data }) => {
+        setBusiness(data);
+        localStorage.setItem('business', JSON.stringify(data));
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('business');
+        setBusiness(null);
+      })
+      .finally(() => setAuthChecked(true));
+  }, []);
 
   const login = async (owner_email, password) => {
     const { data } = await api.post('/auth/login', { owner_email, password });
@@ -36,6 +56,8 @@ export function AuthProvider({ children }) {
     localStorage.setItem('business', JSON.stringify(updated));
     setBusiness(updated);
   };
+
+  if (!authChecked) return null;
 
   return (
     <AuthContext.Provider value={{ business, login, register, logout, updateBusiness }}>
