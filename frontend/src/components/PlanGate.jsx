@@ -3,7 +3,18 @@ import { useAuth } from '../context/AuthContext';
 
 const PLAN_ORDER = ['basic', 'pro', 'business'];
 const PLAN_LABELS = { basic: 'Basic', pro: 'Pro', business: 'Business' };
-const PLAN_COLORS = { basic: 'slate', pro: 'indigo', business: 'violet' };
+
+// Tailwind no genera clases dinámicas (bg-${color}-100), así que usamos mapas completos.
+const ICON_BG = {
+  basic:    'bg-slate-100',
+  pro:      'bg-indigo-100',
+  business: 'bg-violet-100',
+};
+const BTN_CLASS = {
+  basic:    'bg-slate-700 hover:bg-slate-800',
+  pro:      'bg-indigo-600 hover:bg-indigo-700',
+  business: 'bg-violet-600 hover:bg-violet-700',
+};
 
 export default function PlanGate({ minPlan, children, feature = 'esta función' }) {
   const { business } = useAuth();
@@ -12,7 +23,8 @@ export default function PlanGate({ minPlan, children, feature = 'esta función' 
 
   if (currentIdx >= requiredIdx) return children;
 
-  const color = PLAN_COLORS[minPlan] || 'indigo';
+  const iconBg  = ICON_BG[minPlan]  ?? ICON_BG.pro;
+  const btnCls  = BTN_CLASS[minPlan] ?? BTN_CLASS.pro;
 
   return (
     <div className="relative">
@@ -21,7 +33,7 @@ export default function PlanGate({ minPlan, children, feature = 'esta función' 
       </div>
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center max-w-sm mx-4">
-          <div className={`w-14 h-14 bg-${color}-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4`}>
+          <div className={`w-14 h-14 ${iconBg} rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4`}>
             🔒
           </div>
           <h3 className="text-lg font-bold text-slate-900 mb-1">
@@ -32,7 +44,7 @@ export default function PlanGate({ minPlan, children, feature = 'esta función' 
           </p>
           <Link
             to="/dashboard/configuracion"
-            className={`inline-block bg-${color}-600 hover:bg-${color}-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-colors`}
+            className={`inline-block ${btnCls} text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-colors`}
           >
             Ver planes →
           </Link>
