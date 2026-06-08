@@ -16,90 +16,103 @@ function clipString(v, max) {
   return t.slice(0, max);
 }
 
-const list = (req, res) => {
-  const { date, status } = req.query;
+const list = async (req, res) => {
+  const { date, status, from } = req.query;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
   const offset = (page - 1) * limit;
 
-  let where = 'WHERE b.business_id = ?';
+  let where = 'WHERE b.business_id = $1';
   const params = [req.business.id];
+  let i = 2;
 
   if (date) {
     if (!DATE_RE.test(date)) return res.status(400).json({ error: 'formato de fecha inválido (YYYY-MM-DD)' });
-    where += ' AND date(b.datetime_iso) = ?';
+    where += ` AND LEFT(b.datetime_iso, 10) = $${i++}`;
     params.push(date);
   }
-
-  const { from } = req.query;
   if (from) {
     if (!DATE_RE.test(from)) return res.status(400).json({ error: 'formato de fecha inválido (YYYY-MM-DD)' });
-    where += ' AND date(b.datetime_iso) >= ?';
+    where += ` AND LEFT(b.datetime_iso, 10) >= $${i++}`;
     params.push(from);
   }
   if (status) {
     if (!VALID_STATUSES.includes(status)) return res.status(400).json({ error: `status debe ser uno de: ${VALID_STATUSES.join(', ')}` });
-    where += ' AND b.status = ?';
+    where += ` AND b.status = $${i++}`;
     params.push(status);
   }
 
-  const total = db.prepare(`SELECT COUNT(*) as n FROM bookings b ${where}`).get(...params).n;
+  try {
+    const { rows: totalRows } = await db.query(`SELECT COUNT(*) as n FROM bookings b ${where}`, params);
+    const total = parseInt(totalRows[0].n);
 
-  const bookings = db.prepare(`
-    SELECT b.*, s.name as service_name, s.duration_min, p.name as patient_name, p.rut as patient_rut
-    FROM bookings b
-    LEFT JOIN services s ON b.service_id = s.id
-    LEFT JOIN patients p ON b.patient_id = p.id
-    ${where}
-    ORDER BY b.datetime_iso ASC
-    LIMIT ? OFFSET ?
-  `).all(...params, limit, offset);
+    const { rows: bookings } = await db.query(`
+      SELECT b.*, s.name as service_name, s.duration_min, p.name as patient_name, p.rut as patient_rut
+      FROM bookings b
+      LEFT JOIN services s ON b.service_id = s.id
+      LEFT JOIN patients p ON b.patient_id = p.id
+      ${where}
+      ORDER BY b.datetime_iso ASC
+      LIMIT $${i++} OFFSET $${i++}
+    `, [...params, limit, offset]);
 
-  res.json({ bookings, total, page, pages: Math.ceil(total / limit) });
+    res.json({ bookings, total, page, pages: Math.ceil(total / limit) });
+  } catch (err) {
+    console.error('[bookings] list error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 };
 
-const create = (req, res) => {
+const create = async (req, res) => {
   const { client_name, client_email, client_phone, service_id, datetime_iso, notes, source } = req.body;
 
   if (!client_name || !datetime_iso) {
     return res.status(400).json({ error: 'client_name y datetime_iso son requeridos' });
   }
 
-  // Verificar que el servicio pertenece al negocio si se provee
-  if (service_id) {
-    const service = db.prepare('SELECT id FROM services WHERE id = ? AND business_id = ?').get(service_id, req.business.id);
-    if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
+  const client = await db.connect();
+  try {
+    if (service_id) {
+      const { rows } = await client.query('SELECT id FROM services WHERE id = $1 AND business_id = $2', [service_id, req.business.id]);
+      if (!rows[0]) return res.status(404).json({ error: 'Servicio no encontrado' });
+    }
+
+    await client.query('BEGIN');
+
+    const { rows: conflict } = await client.query(
+      "SELECT id FROM bookings WHERE business_id = $1 AND datetime_iso = $2 AND status != 'cancelled'",
+      [req.business.id, datetime_iso]
+    );
+    if (conflict.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Ese horario ya está reservado' });
+    }
+
+    const { rows } = await client.query(`
+      INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [req.business.id, service_id || null, client_name, client_email || null, client_phone || null, datetime_iso, notes || null, source || 'web']);
+
+    await client.query('COMMIT');
+
+    const { rows: full } = await db.query(`
+      SELECT b.*, s.name as service_name FROM bookings b
+      LEFT JOIN services s ON b.service_id = s.id
+      WHERE b.id = $1
+    `, [rows[0].id]);
+
+    res.status(201).json(full[0]);
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[bookings] create error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  } finally {
+    client.release();
   }
-
-  const conflict = db.prepare(
-    "SELECT id FROM bookings WHERE business_id = ? AND datetime_iso = ? AND status != 'cancelled'"
-  ).get(req.business.id, datetime_iso);
-  if (conflict) return res.status(409).json({ error: 'Ese horario ya está reservado' });
-
-  const result = db.prepare(`
-    INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    req.business.id,
-    service_id || null,
-    client_name,
-    client_email || null,
-    client_phone || null,
-    datetime_iso,
-    notes || null,
-    source || 'web'
-  );
-
-  const booking = db.prepare(`
-    SELECT b.*, s.name as service_name FROM bookings b
-    LEFT JOIN services s ON b.service_id = s.id
-    WHERE b.id = ?
-  `).get(result.lastInsertRowid);
-
-  res.status(201).json(booking);
 };
 
-const updateStatus = (req, res) => {
+const updateStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const valid = ['confirmed', 'cancelled', 'completed', 'no_show'];
@@ -108,29 +121,35 @@ const updateStatus = (req, res) => {
     return res.status(400).json({ error: `status debe ser uno de: ${valid.join(', ')}` });
   }
 
-  const booking = db.prepare('SELECT id FROM bookings WHERE id = ? AND business_id = ?').get(id, req.business.id);
-  if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
+  try {
+    const { rows } = await db.query('SELECT id FROM bookings WHERE id = $1 AND business_id = $2', [id, req.business.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
 
-  db.prepare('UPDATE bookings SET status = ? WHERE id = ?').run(status, id);
-  res.json(db.prepare('SELECT * FROM bookings WHERE id = ?').get(id));
+    await db.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id]);
+    const { rows: updated } = await db.query('SELECT * FROM bookings WHERE id = $1', [id]);
+    res.json(updated[0]);
+  } catch (err) {
+    console.error('[bookings] updateStatus error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 };
 
-const remove = (req, res) => {
+const remove = async (req, res) => {
   const { id } = req.params;
-  const booking = db.prepare('SELECT id FROM bookings WHERE id = ? AND business_id = ?').get(id, req.business.id);
-  if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
-
-  db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
-  res.json({ ok: true });
+  try {
+    const { rows } = await db.query('SELECT id FROM bookings WHERE id = $1 AND business_id = $2', [id, req.business.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
+    await db.query('DELETE FROM bookings WHERE id = $1', [id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[bookings] remove error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 };
 
-// Endpoint público — no requiere auth del negocio, solo el slug
-const publicCreate = (req, res) => {
+const publicCreate = async (req, res) => {
   const { slug } = req.params;
-  const business = db.prepare('SELECT * FROM businesses WHERE slug = ?').get(slug);
-  if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
 
-  // Validación + recorte de campos públicos (anti-spam / anti-payload-grande)
   const name = clipString(req.body.client_name, 100);
   if (!name) return res.status(400).json({ error: 'client_name es requerido' });
 
@@ -154,80 +173,90 @@ const publicCreate = (req, res) => {
     return res.status(400).json({ error: 'service_id inválido' });
   }
 
-  if (serviceId) {
-    const service = db.prepare('SELECT id FROM services WHERE id = ? AND business_id = ?').get(serviceId, business.id);
-    if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
-  }
-
   const VALID_SOURCES = ['web', 'whatsapp', 'phone', 'other'];
   const source = VALID_SOURCES.includes(req.body.source) ? req.body.source : 'web';
 
-  const cancelToken = randomUUID();
-  let booking;
+  const client = await db.connect();
   try {
-    db.exec('BEGIN IMMEDIATE');
-    const conflict = db.prepare(
-      "SELECT id FROM bookings WHERE business_id = ? AND datetime_iso = ? AND status != 'cancelled'"
-    ).get(business.id, datetime_iso);
+    const { rows: bizRows } = await client.query('SELECT * FROM businesses WHERE slug = $1', [slug]);
+    if (!bizRows[0]) return res.status(404).json({ error: 'Negocio no encontrado' });
+    const business = bizRows[0];
 
-    if (conflict) {
-      db.exec('ROLLBACK');
+    if (serviceId) {
+      const { rows: svcRows } = await client.query('SELECT id FROM services WHERE id = $1 AND business_id = $2', [serviceId, business.id]);
+      if (!svcRows[0]) return res.status(404).json({ error: 'Servicio no encontrado' });
+    }
+
+    const cancelToken = randomUUID();
+
+    await client.query('BEGIN');
+
+    const { rows: conflict } = await client.query(
+      "SELECT id FROM bookings WHERE business_id = $1 AND datetime_iso = $2 AND status != 'cancelled'",
+      [business.id, datetime_iso]
+    );
+    if (conflict.length) {
+      await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Ese horario ya no está disponible' });
     }
 
-    const result = db.prepare(`
+    const { rows } = await client.query(`
       INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut, cancel_token)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(business.id, serviceId || null, name, email, phone, datetime_iso, notes, source, rut, cancelToken);
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *
+    `, [business.id, serviceId || null, name, email, phone, datetime_iso, notes, source, rut, cancelToken]);
 
-    booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
-    db.exec('COMMIT');
+    await client.query('COMMIT');
+    const booking = rows[0];
+
+    const serviceRow = serviceId
+      ? (await db.query('SELECT name FROM services WHERE id = $1', [serviceId])).rows[0]
+      : null;
+
+    notifyBooking({
+      clientName: name, clientPhone: phone, clientEmail: email,
+      serviceName: serviceRow?.name || null, datetimeISO: datetime_iso,
+      businessName: business.name,
+    }).catch(err => console.error('[whatsapp] Error enviando notificación:', err));
+
+    sendBookingConfirmation({
+      clientName: name, clientEmail: email,
+      serviceName: serviceRow?.name || null, datetimeISO: datetime_iso,
+      businessName: business.name, cancelToken,
+    }).catch(err => console.error('[email] Error enviando confirmación:', err));
+
+    res.status(201).json({ ok: true, booking_id: booking.id, datetime_iso: booking.datetime_iso, cancel_token: cancelToken });
   } catch (err) {
-    try { db.exec('ROLLBACK'); } catch (_) {}
-    console.error('[bookings] Error al crear reserva:', err.message);
-    return res.status(500).json({ error: 'Error interno al crear la reserva' });
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[bookings] publicCreate error:', err.message);
+    res.status(500).json({ error: 'Error interno al crear la reserva' });
+  } finally {
+    client.release();
   }
-
-  const serviceRow = serviceId
-    ? db.prepare('SELECT name FROM services WHERE id = ?').get(serviceId)
-    : null;
-
-  notifyBooking({
-    clientName: name,
-    clientPhone: phone,
-    clientEmail: email,
-    serviceName: serviceRow?.name || null,
-    datetimeISO: datetime_iso,
-    businessName: business.name,
-  }).catch(err => console.error('[whatsapp] Error enviando notificación:', err));
-
-  sendBookingConfirmation({
-    clientName: name,
-    clientEmail: email,
-    serviceName: serviceRow?.name || null,
-    datetimeISO: datetime_iso,
-    businessName: business.name,
-    cancelToken,
-  }).catch(err => console.error('[email] Error enviando confirmación:', err));
-
-  res.status(201).json({ ok: true, booking_id: booking.id, datetime_iso: booking.datetime_iso, cancel_token: cancelToken });
 };
 
-const updateBooking = (req, res) => {
-  const booking = db.prepare('SELECT id FROM bookings WHERE id = ? AND business_id = ?').get(req.params.id, req.business.id);
-  if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
-  const { patient_id } = req.body;
-  if (patient_id !== undefined) {
-    let safePatientId = null;
-    if (patient_id) {
-      // Verifica que el paciente pertenece a este negocio (evita link cross-tenant)
-      const owned = db.prepare('SELECT id FROM patients WHERE id = ? AND business_id = ?').get(patient_id, req.business.id);
-      if (!owned) return res.status(404).json({ error: 'Paciente no encontrado' });
-      safePatientId = owned.id;
+const updateBooking = async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT id FROM bookings WHERE id = $1 AND business_id = $2', [req.params.id, req.business.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
+
+    const { patient_id } = req.body;
+    if (patient_id !== undefined) {
+      let safePatientId = null;
+      if (patient_id) {
+        const { rows: owned } = await db.query('SELECT id FROM patients WHERE id = $1 AND business_id = $2', [patient_id, req.business.id]);
+        if (!owned[0]) return res.status(404).json({ error: 'Paciente no encontrado' });
+        safePatientId = owned[0].id;
+      }
+      await db.query('UPDATE bookings SET patient_id = $1 WHERE id = $2', [safePatientId, req.params.id]);
     }
-    db.prepare('UPDATE bookings SET patient_id = ? WHERE id = ?').run(safePatientId, req.params.id);
+
+    const { rows: updated } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+    res.json(updated[0]);
+  } catch (err) {
+    console.error('[bookings] updateBooking error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-  res.json(db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id));
 };
 
 module.exports = { list, create, updateStatus, remove, publicCreate, updateBooking };
