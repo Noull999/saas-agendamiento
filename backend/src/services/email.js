@@ -84,4 +84,52 @@ async function sendBookingConfirmation({
   });
 }
 
-module.exports = { sendBookingConfirmation };
+async function sendBusinessNotification({
+  businessEmail, businessName, clientName, clientPhone, serviceName, datetimeISO,
+}) {
+  if (!businessEmail) return;
+  const transport = createTransport();
+  if (!transport) return;
+
+  const datetime = formatDatetime(datetimeISO);
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#ffffff;">
+      <div style="background:linear-gradient(135deg,#1e293b,#dc2626);border-radius:16px;padding:28px;text-align:center;margin-bottom:24px;">
+        <h1 style="color:#ffffff;margin:0;font-size:20px;">📅 Nueva reserva recibida</h1>
+      </div>
+      <p style="color:#334155;font-size:15px;">Tienes una nueva cita confirmada en <strong>${businessName}</strong>.</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="color:#64748b;font-size:13px;padding:6px 0;width:40%;">Cliente</td>
+            <td style="color:#1e293b;font-size:13px;font-weight:600;padding:6px 0;">${clientName}</td>
+          </tr>
+          ${clientPhone ? `<tr>
+            <td style="color:#64748b;font-size:13px;padding:6px 0;">Teléfono</td>
+            <td style="color:#1e293b;font-size:13px;font-weight:600;padding:6px 0;">${clientPhone}</td>
+          </tr>` : ''}
+          ${serviceName ? `<tr>
+            <td style="color:#64748b;font-size:13px;padding:6px 0;">Servicio</td>
+            <td style="color:#1e293b;font-size:13px;font-weight:600;padding:6px 0;">${serviceName}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="color:#64748b;font-size:13px;padding:6px 0;">Fecha y hora</td>
+            <td style="color:#1e293b;font-size:13px;font-weight:600;padding:6px 0;text-transform:capitalize;">${datetime}</td>
+          </tr>
+        </table>
+      </div>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0;">Notificación automática de AgendaSaaS.</p>
+    </div>
+  `;
+
+  await transport.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: businessEmail,
+    subject: `Nueva reserva — ${clientName} · ${businessName}`,
+    html,
+  });
+}
+
+module.exports = { sendBookingConfirmation, sendBusinessNotification };

@@ -1,7 +1,7 @@
 const db = require('../db/database');
 const { randomUUID } = require('node:crypto');
 const { notifyBooking } = require('../services/whatsapp');
-const { sendBookingConfirmation } = require('../services/email');
+const { sendBookingConfirmation, sendBusinessNotification } = require('../services/email');
 
 const VALID_STATUSES = ['confirmed', 'cancelled', 'completed', 'no_show'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -79,6 +79,29 @@ const create = async (req, res) => {
 
     await client.query('BEGIN');
 
+    // Enforce plan limits
+    const { rows: planRows } = await client.query(
+      'SELECT plan FROM businesses WHERE id = $1', [req.business.id]
+    );
+    const plan = planRows[0]?.plan || 'basic';
+    if (plan === 'basic') {
+      const monthStart = new Date();
+      monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+      const monthStr = monthStart.toISOString().slice(0, 10);
+      const { rows: countRows } = await client.query(
+        "SELECT COUNT(*) as n FROM bookings WHERE business_id = $1 AND LEFT(datetime_iso, 10) >= $2 AND status NOT IN ('cancelled')",
+        [req.business.id, monthStr]
+      );
+      if (parseInt(countRows[0].n) >= 100) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({
+          error: 'Has alcanzado el límite de 100 reservas mensuales del plan Basic. Actualiza a Pro para reservas ilimitadas.',
+          requiredPlan: 'pro',
+          currentPlan: 'basic',
+        });
+      }
+    }
+
     const { rows: conflict } = await client.query(
       "SELECT id FROM bookings WHERE business_id = $1 AND datetime_iso = $2 AND status != 'cancelled'",
       [req.business.id, datetime_iso]
@@ -101,6 +124,27 @@ const create = async (req, res) => {
       LEFT JOIN services s ON b.service_id = s.id
       WHERE b.id = $1
     `, [rows[0].id]);
+
+    // Non-blocking: notify business owner by email
+    (async () => {
+      try {
+        const { rows: biz } = await db.query(
+          'SELECT owner_email, name FROM businesses WHERE id = $1', [req.business.id]
+        );
+        if (biz[0]?.owner_email) {
+          await sendBusinessNotification({
+            businessEmail: biz[0].owner_email,
+            businessName: biz[0].name,
+            clientName: full[0].client_name,
+            clientPhone: full[0].client_phone,
+            serviceName: full[0].service_name,
+            datetimeISO: full[0].datetime_iso,
+          });
+        }
+      } catch (e) {
+        console.error('[bookings] Failed to notify business by email:', e.message);
+      }
+    })();
 
     res.status(201).json(full[0]);
   } catch (err) {
