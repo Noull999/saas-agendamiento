@@ -1,6 +1,6 @@
 const db = require('../db/database');
 
-const VALID_VERTICALS = ['salud', 'belleza'];
+const VALID_VERTICALS = ['salud', 'belleza', 'general'];
 
 const getProfile = async (req, res) => {
   try {

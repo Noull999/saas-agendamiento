@@ -30,7 +30,7 @@ function generateToken(business) {
   );
 }
 
-const VALID_VERTICALS = ['salud', 'belleza'];
+const VALID_VERTICALS = ['salud', 'belleza', 'general'];
 
 const register = async (req, res) => {
   const { name, owner_email, password, phone, specialty, vertical } = req.body;

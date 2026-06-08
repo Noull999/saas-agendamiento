@@ -49,6 +49,31 @@ export const VERTICALS = {
     ],
     booking: { showRut: false, clientLabel: 'Cliente' },
   },
+  general: {
+    id: 'general',
+    label: 'Otro negocio',
+    icon: '🏢',
+    description: 'Consultorías, talleres, clases, arriendo de espacios y más',
+    color: 'slate',
+    specialties: [
+      { value: 'consultoria', label: 'Consultoría' },
+      { value: 'clases', label: 'Clases & Tutorías' },
+      { value: 'taller', label: 'Taller & Capacitación' },
+      { value: 'arriendo', label: 'Arriendo de espacios' },
+      { value: 'veterinaria', label: 'Veterinaria' },
+      { value: 'otro', label: 'Otro' },
+    ],
+    modules: [
+      { to: '/dashboard', label: 'Reservas', icon: '📅' },
+      { to: '/dashboard/servicios', label: 'Servicios', icon: '🛠' },
+      { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
+      { to: '/dashboard/clientes', label: 'Clientes', icon: '👤' },
+      { to: '/dashboard/profesionales', label: 'Profesionales', icon: '👥', minPlan: 'pro' },
+      { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
+      { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
+    ],
+    booking: { showRut: false, clientLabel: 'Cliente' },
+  },
 };
 
 const PLAN_ORDER = ['basic', 'pro', 'clinica'];
