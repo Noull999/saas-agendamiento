@@ -576,8 +576,8 @@ export default function LandingPage() {
             <span className="font-semibold text-white">AgendaSaaS</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-slate-500">
-            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-            <a href="#" className="hover:text-white transition-colors">Términos</a>
+            <Link to="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
+            <Link to="/terminos" className="hover:text-white transition-colors">Términos</Link>
             <a href="#" className="hover:text-white transition-colors">Contacto</a>
           </div>
           <p className="text-slate-600 text-xs">© 2026 AgendaSaaS. Todos los derechos reservados.</p>

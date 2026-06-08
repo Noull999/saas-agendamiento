@@ -26,7 +26,7 @@ export default function Register() {
     setError('');
     try {
       await register(form.name, form.owner_email, form.password, form.phone, form.specialty, selectedVertical.id);
-      navigate('/dashboard');
+      navigate('/onboarding');
     } catch (err) {
       setError(err.response?.data?.error || 'Error al registrarse');
     } finally {
@@ -168,6 +168,13 @@ export default function Register() {
                 >
                   {loading ? 'Creando cuenta...' : 'Crear cuenta gratis'}
                 </button>
+
+                <p className="text-center text-xs text-slate-400 leading-relaxed">
+                  Al crear tu cuenta aceptas los{' '}
+                  <Link to="/terminos" className="text-slate-500 hover:underline">Términos de servicio</Link>{' '}
+                  y la{' '}
+                  <Link to="/privacidad" className="text-slate-500 hover:underline">Política de privacidad</Link>.
+                </p>
               </form>
 
               <p className="text-center text-sm text-slate-500 mt-6">

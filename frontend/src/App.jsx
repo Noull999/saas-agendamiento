@@ -25,6 +25,11 @@ const PatientDetail  = lazy(() => import('./pages/PatientDetail'));
 const Consultations  = lazy(() => import('./pages/Consultations'));
 const Professionals = lazy(() => import('./pages/Professionals'));
 const Clients       = lazy(() => import('./pages/Clients'));
+const Onboarding    = lazy(() => import('./pages/Onboarding'));
+
+// Páginas legales (públicas)
+const Terms   = lazy(() => import('./pages/legal/Terms'));
+const Privacy = lazy(() => import('./pages/legal/Privacy'));
 
 function PageLoader() {
   return (
@@ -63,6 +68,11 @@ function App() {
             <Route path="/register"         element={<PublicOnly><Register /></PublicOnly>} />
             <Route path="/forgot-password"  element={<PublicOnly><ForgotPassword /></PublicOnly>} />
             <Route path="/reset-password"   element={<PublicOnly><ResetPassword /></PublicOnly>} />
+
+            <Route path="/terminos"    element={<Terms />} />
+            <Route path="/privacidad"  element={<Privacy />} />
+
+            <Route path="/onboarding"  element={<Protected><Onboarding /></Protected>} />
 
             <Route path="/dashboard"                 element={<Protected><Layout><Bookings /></Layout></Protected>} />
             <Route path="/dashboard/servicios"       element={<Protected><Layout><Services /></Layout></Protected>} />
