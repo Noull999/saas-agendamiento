@@ -14,7 +14,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 require('./db/database');
 
 const express = require('express');
-const { startReminderJob } = require('./jobs/reminders');
+const { startReminderJob, stopReminderJob } = require('./jobs/reminders');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -112,13 +112,35 @@ app.use('/api/billing', require('./routes/billing.routes'));
 
 app.get('/health', (_, res) => res.json({ ok: true }));
 
+app.get('/health/ready', async (_, res) => {
+  try {
+    await require('./db/database').query('SELECT 1');
+    res.json({ ok: true, db: 'connected' });
+  } catch {
+    res.status(503).json({ ok: false, db: 'unreachable' });
+  }
+});
+
 // Error handler — nunca expone detalles internos al cliente
 app.use((err, req, res, next) => {
   console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[API] Servidor corriendo en http://localhost:${PORT}`);
   startReminderJob();
 });
+
+function gracefulShutdown(signal) {
+  console.log(`[API] ${signal} recibido, cerrando servidor...`);
+  stopReminderJob();
+  server.close(async () => {
+    await require('./db/database').pool.end();
+    console.log('[API] Servidor cerrado correctamente');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10000);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
