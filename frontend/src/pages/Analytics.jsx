@@ -5,30 +5,39 @@ import {
 } from 'recharts';
 import api from '../api/client';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['#ef4444', '#f97316', '#a855f7', '#10b981', '#f59e0b'];
 
-function StatCard({ label, value, color = 'text-slate-900' }) {
+const DARK_TOOLTIP = {
+  contentStyle: { background: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px', color: '#fff' },
+  labelStyle: { color: '#a1a1aa' },
+};
+
+function StatCard({ label, value, color = 'text-white' }) {
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-      <p className="text-sm text-slate-500 mb-1">{label}</p>
+    <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
+      <p className="text-sm text-zinc-400 mb-1">{label}</p>
       <p className={`text-3xl font-bold ${color}`}>{value}</p>
     </div>
   );
 }
 
-function RevenueCard({ value }) {
+function RevenueCard({ value, prevRevenue }) {
   const [visible, setVisible] = useState(false);
   const formatted = typeof value === 'number'
     ? `$${value.toLocaleString('es-CL')}`
     : '—';
 
+  const pct = (typeof value === 'number' && typeof prevRevenue === 'number' && prevRevenue > 0)
+    ? (((value - prevRevenue) / prevRevenue) * 100).toFixed(1)
+    : null;
+
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 col-span-2 md:col-span-1">
+    <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800 col-span-2 md:col-span-1">
       <div className="flex items-center justify-between mb-1">
-        <p className="text-sm text-slate-500">Ingresos del período</p>
+        <p className="text-sm text-zinc-400">Ingresos del período</p>
         <button
           onClick={() => setVisible(v => !v)}
-          className="text-slate-400 hover:text-slate-700 transition-colors p-1 rounded-lg hover:bg-slate-100"
+          className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-zinc-800"
           title={visible ? 'Ocultar' : 'Mostrar ingresos'}
         >
           {visible ? (
@@ -44,14 +53,19 @@ function RevenueCard({ value }) {
         </button>
       </div>
       <p
-        className={`text-3xl font-bold text-emerald-600 transition-all duration-300 select-none ${
+        className={`text-3xl font-bold text-emerald-400 transition-all duration-300 select-none ${
           visible ? '' : 'blur-sm'
         }`}
       >
         {formatted}
       </p>
       {!visible && (
-        <p className="text-xs text-slate-400 mt-1">Haz clic en el ojo para ver</p>
+        <p className="text-xs text-zinc-500 mt-1">Haz clic en el ojo para ver</p>
+      )}
+      {pct !== null && (
+        <p className={`text-xs mt-2 font-medium ${Number(pct) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          {Number(pct) >= 0 ? `+${pct}%` : `${pct}%`} vs período anterior
+        </p>
       )}
     </div>
   );
@@ -83,17 +97,21 @@ export default function Analytics() {
   useEffect(() => { load(range); }, [range]);
 
   const pieData = data?.byService?.map(s => ({ name: s.name, value: s.count })) || [];
+  const peakHours = data?.peakHours || [];
+  const newClients = data?.newVsReturning?.new_clients ?? 0;
+  const returningClients = data?.newVsReturning?.returning_clients ?? 0;
+  const cancellationRate = data?.cancellationRate ?? null;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Estadísticas de tu negocio</p>
+          <h1 className="text-2xl font-bold text-white">Analytics</h1>
+          <p className="text-zinc-400 text-sm mt-0.5">Estadísticas de tu negocio</p>
         </div>
         <select
           value={range} onChange={(e) => setRange(e.target.value)}
-          className="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-2 text-sm shadow-md shadow-black/20 focus:outline-none focus:ring-2 focus:ring-red-500"
         >
           <option value="7">Últimos 7 días</option>
           <option value="30">Últimos 30 días</option>
@@ -101,42 +119,61 @@ export default function Analytics() {
         </select>
       </div>
 
-      {loading && <p className="text-slate-400 text-sm">Cargando...</p>}
+      {loading && <p className="text-zinc-500 text-sm">Cargando...</p>}
 
       {!loading && data && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <StatCard label="Total reservas"  value={data.totals.total} />
-            <StatCard label="Confirmadas"     value={data.totals.confirmed} color="text-indigo-600" />
-            <StatCard label="Completadas"     value={data.totals.completed} color="text-emerald-600" />
+            <StatCard label="Confirmadas"     value={data.totals.confirmed} color="text-red-400" />
+            <StatCard label="Completadas"     value={data.totals.completed} color="text-emerald-400" />
             <StatCard label="Canceladas"      value={data.totals.cancelled} color="text-red-500" />
-            <RevenueCard value={data.revenue} />
+            <RevenueCard value={data.revenue} prevRevenue={data.prevRevenue} />
+            {cancellationRate !== null && (
+              <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
+                <p className="text-sm text-zinc-400 mb-1">Tasa de cancelación</p>
+                <p className="text-3xl font-bold text-amber-400">{Number(cancellationRate).toFixed(1)}%</p>
+              </div>
+            )}
+            {(newClients > 0 || returningClients > 0) && (
+              <>
+                <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
+                  <p className="text-sm text-zinc-400 mb-1">Clientes nuevos</p>
+                  <p className="text-3xl font-bold text-violet-400">{newClients}</p>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
+                  <p className="text-sm text-zinc-400 mb-1">Clientes recurrentes</p>
+                  <p className="text-3xl font-bold text-blue-400">{returningClients}</p>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Reservas por día</h2>
+            <div className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-md shadow-black/20 p-6">
+              <h2 className="text-sm font-semibold text-zinc-300 mb-4">Reservas por día</h2>
               {data.byDay.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-8">Sin datos en este período</p>
+                <p className="text-zinc-500 text-sm text-center py-8">Sin datos en este período</p>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={data.byDay} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <XAxis dataKey="day" tickFormatter={formatDay} tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="day" tickFormatter={formatDay} tick={{ fill: '#71717a', fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fill: '#71717a', fontSize: 11 }} />
                     <Tooltip
                       labelFormatter={(v) => `Día: ${formatDay(v)}`}
                       formatter={(v) => [v, 'Reservas']}
+                      {...DARK_TOOLTIP}
                     />
-                    <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Top servicios</h2>
+            <div className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-md shadow-black/20 p-6">
+              <h2 className="text-sm font-semibold text-zinc-300 mb-4">Top servicios</h2>
               {pieData.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-8">Sin datos en este período</p>
+                <p className="text-zinc-500 text-sm text-center py-8">Sin datos en este período</p>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
@@ -145,16 +182,36 @@ export default function Analytics() {
                       cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) =>
                         `${name} ${(percent * 100).toFixed(0)}%`
                       }
+                      labelLine={{ stroke: '#71717a' }}
                     >
                       {pieData.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Legend />
+                    <Legend wrapperStyle={{ color: '#a1a1aa', fontSize: 12 }} />
+                    <Tooltip {...DARK_TOOLTIP} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
             </div>
+
+            {peakHours.length > 0 && (
+              <div className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-md shadow-black/20 p-6 md:col-span-2">
+                <h2 className="text-sm font-semibold text-zinc-300 mb-4">Horas pico</h2>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={peakHours} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="hour" tick={{ fill: '#71717a', fontSize: 11 }} tickFormatter={(h) => `${h}:00`} />
+                    <YAxis allowDecimals={false} tick={{ fill: '#71717a', fontSize: 11 }} />
+                    <Tooltip
+                      labelFormatter={(h) => `${h}:00`}
+                      formatter={(v) => [v, 'Reservas']}
+                      {...DARK_TOOLTIP}
+                    />
+                    <Bar dataKey="count" fill="#f97316" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </>
       )}

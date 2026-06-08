@@ -4,17 +4,17 @@ import api from '../api/client';
 import { isValidRut } from '../utils/rut';
 
 const STATUS_LABELS = {
-  confirmed: { label: 'Confirmada', color: 'bg-emerald-100 text-emerald-700' },
-  cancelled:  { label: 'Cancelada',  color: 'bg-red-100 text-red-600'        },
-  completed:  { label: 'Completada', color: 'bg-slate-100 text-slate-600'    },
-  no_show:    { label: 'No asistió', color: 'bg-amber-100 text-amber-700'    },
+  confirmed: { label: 'Confirmada', color: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' },
+  cancelled:  { label: 'Cancelada',  color: 'bg-red-500/10 border border-red-500/30 text-red-400'           },
+  completed:  { label: 'Completada', color: 'bg-zinc-700/50 border border-zinc-600 text-zinc-300'           },
+  no_show:    { label: 'No asistió', color: 'bg-amber-500/10 border border-amber-500/30 text-amber-400'     },
 };
 
 const STATUS_COLORS = {
-  confirmed: 'bg-emerald-50 border-emerald-200 text-emerald-800',
-  cancelled:  'bg-red-50 border-red-200 text-red-700',
-  completed:  'bg-slate-50 border-slate-200 text-slate-600',
-  no_show:    'bg-amber-50 border-amber-200 text-amber-700',
+  confirmed: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+  cancelled:  'bg-red-500/10 border-red-500/30 text-red-400',
+  completed:  'bg-zinc-700/50 border-zinc-600 text-zinc-300',
+  no_show:    'bg-amber-500/10 border-amber-500/30 text-amber-400',
 };
 
 const DAYS_ES   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -100,22 +100,22 @@ function CalendarView({ bookings, navigate }) {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setWeekStart(w => addDays(w, -7))}
-          className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm"
+          className="p-2 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-sm"
         >
           ← Anterior
         </button>
         <div className="text-center">
-          <p className="font-semibold text-slate-800 capitalize text-sm">{monthLabel()}</p>
+          <p className="font-semibold text-white capitalize text-sm">{monthLabel()}</p>
           <button
             onClick={() => setWeekStart(getWeekStart(new Date()))}
-            className="text-xs text-indigo-500 hover:underline mt-0.5"
+            className="text-xs text-red-400 hover:underline mt-0.5"
           >
             Ir a esta semana
           </button>
         </div>
         <button
           onClick={() => setWeekStart(w => addDays(w, 7))}
-          className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm"
+          className="p-2 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-sm"
         >
           Siguiente →
         </button>
@@ -131,10 +131,10 @@ function CalendarView({ bookings, navigate }) {
             <div key={key} className="min-h-[140px]">
               {/* Day header */}
               <div className={`text-center py-2 mb-1.5 rounded-xl text-xs font-semibold ${
-                isToday ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+                isToday ? 'bg-red-600 text-white' : 'bg-zinc-800 text-zinc-400'
               }`}>
                 <p>{DAYS_SHORT[day.getDay()]}</p>
-                <p className={`text-base font-bold leading-tight ${isToday ? 'text-white' : 'text-slate-800'}`}>
+                <p className={`text-base font-bold leading-tight ${isToday ? 'text-white' : 'text-zinc-300'}`}>
                   {day.getDate()}
                 </p>
               </div>
@@ -156,7 +156,7 @@ function CalendarView({ bookings, navigate }) {
                   </div>
                 ))}
                 {items.length === 0 && (
-                  <p className="text-center text-slate-200 text-[10px] mt-4">–</p>
+                  <p className="text-center text-zinc-700 text-[10px] mt-4">–</p>
                 )}
               </div>
             </div>
@@ -243,28 +243,28 @@ export default function Bookings() {
 
   const groups    = groupByDate(bookings);
   const confirmed = bookings.filter(b => b.status === 'confirmed').length;
-  const inputClass = 'w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
+  const inputClass = 'w-full bg-zinc-800 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
 
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Reservas</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Próximas citas de tu negocio</p>
+          <h1 className="text-2xl font-bold text-white">Reservas</h1>
+          <p className="text-zinc-400 text-sm mt-0.5">Próximas citas de tu negocio</p>
         </div>
         <div className="flex items-center gap-2">
           {/* View toggle */}
-          <div className="flex border border-slate-200 rounded-xl overflow-hidden text-sm">
+          <div className="flex border border-zinc-700 rounded-xl overflow-hidden text-sm">
             <button
               onClick={() => setViewMode('lista')}
-              className={`px-4 py-2 font-medium transition-colors ${viewMode === 'lista' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+              className={`px-4 py-2 font-medium transition-colors ${viewMode === 'lista' ? 'bg-red-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}
             >
               Lista
             </button>
             <button
               onClick={() => setViewMode('semana')}
-              className={`px-4 py-2 font-medium transition-colors ${viewMode === 'semana' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+              className={`px-4 py-2 font-medium transition-colors ${viewMode === 'semana' ? 'bg-red-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}
             >
               Semana
             </button>
@@ -274,7 +274,7 @@ export default function Bookings() {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-2 text-sm shadow-md shadow-black/20 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
               <option value="">Todos los estados</option>
               <option value="confirmed">Confirmadas</option>
@@ -288,45 +288,45 @@ export default function Bookings() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <p className="text-sm text-slate-500 mb-1">Total próximas</p>
-          <p className="text-3xl font-bold text-slate-900">{bookings.length}</p>
+        <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
+          <p className="text-sm text-zinc-400 mb-1">Total próximas</p>
+          <p className="text-3xl font-bold text-white">{bookings.length}</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <p className="text-sm text-slate-500 mb-1">Confirmadas</p>
-          <p className="text-3xl font-bold text-emerald-600">{confirmed}</p>
+        <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
+          <p className="text-sm text-zinc-400 mb-1">Confirmadas</p>
+          <p className="text-3xl font-bold text-emerald-400">{confirmed}</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <p className="text-sm text-slate-500 mb-1">Con ficha</p>
-          <p className="text-3xl font-bold text-indigo-600">{bookings.filter(b => b.patient_id).length}</p>
+        <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
+          <p className="text-sm text-zinc-400 mb-1">Con ficha</p>
+          <p className="text-3xl font-bold text-red-400">{bookings.filter(b => b.patient_id).length}</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+        <div className="bg-zinc-900 rounded-2xl p-5 shadow-md shadow-black/20 border border-zinc-800">
           <div className="flex items-center gap-1.5 mb-1">
             <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
               <path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/>
             </svg>
-            <p className="text-sm text-slate-500">Recordatorios enviados</p>
+            <p className="text-sm text-zinc-400">Recordatorios enviados</p>
           </div>
-          <p className="text-3xl font-bold text-green-600">{bookings.filter(b => b.reminder_sent).length}</p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-3xl font-bold text-green-400">{bookings.filter(b => b.reminder_sent).length}</p>
+          <p className="text-xs text-zinc-500 mt-1">
             {bookings.length - bookings.filter(b => b.reminder_sent).length} pendientes
           </p>
         </div>
       </div>
 
-      {loading && <p className="text-slate-400 text-sm">Cargando...</p>}
+      {loading && <p className="text-zinc-500 text-sm">Cargando...</p>}
 
       {!loading && bookings.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-16 text-center shadow-sm">
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
           <p className="text-4xl mb-3">📭</p>
-          <p className="text-slate-400 text-sm">No hay reservas próximas</p>
+          <p className="text-zinc-400 text-sm">No hay reservas próximas</p>
         </div>
       )}
 
       {/* ── CALENDAR VIEW ── */}
       {!loading && viewMode === 'semana' && bookings.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm overflow-x-auto">
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 shadow-md shadow-black/20 overflow-x-auto">
           <CalendarView
             bookings={bookings}
             onChangeStatus={changeStatus}
@@ -341,21 +341,21 @@ export default function Bookings() {
           {groups.map(([day, items]) => (
             <div key={day}>
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-sm font-semibold text-slate-700 capitalize">{formatDate(day)}</span>
-                <span className="text-xs text-slate-400">{day}</span>
-                <div className="flex-1 h-px bg-slate-100" />
-                <span className="text-xs text-slate-400">{items.length} cita{items.length !== 1 ? 's' : ''}</span>
+                <span className="text-sm font-semibold text-zinc-300 capitalize">{formatDate(day)}</span>
+                <span className="text-xs text-zinc-500">{day}</span>
+                <div className="flex-1 h-px bg-zinc-800" />
+                <span className="text-xs text-zinc-500">{items.length} cita{items.length !== 1 ? 's' : ''}</span>
               </div>
 
               <div className="space-y-2">
                 {items.map((b) => (
-                  <div key={b.id} className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4 shadow-sm">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
+                  <div key={b.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 flex items-center gap-4 shadow-md shadow-black/20">
+                    <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-400 font-bold text-sm shrink-0">
                       {initials(b.client_name)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 text-sm">{b.client_name}</p>
-                      <p className="text-slate-400 text-xs">
+                      <p className="font-semibold text-white text-sm">{b.client_name}</p>
+                      <p className="text-zinc-400 text-xs">
                         {b.service_name || 'Sin servicio'}{b.duration_min ? ` · ${b.duration_min} min` : ''}{b.client_phone ? ` · ${b.client_phone}` : ''}
                       </p>
                       <div className="mt-1 flex items-center gap-2 flex-wrap">
@@ -368,12 +368,12 @@ export default function Bookings() {
                         )}
                         {/* Recordatorio WhatsApp */}
                         {b.reminder_sent ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/></svg>
                             Recordatorio enviado
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-xs text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-full">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/></svg>
                             Recordatorio pendiente
                           </span>
@@ -381,14 +381,14 @@ export default function Bookings() {
                         {b.patient_name ? (
                           <button
                             onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
-                            className="text-xs text-indigo-600 hover:underline"
+                            className="text-xs text-red-400 hover:underline"
                           >
                             👤 {b.patient_name}
                           </button>
                         ) : (
                           <button
                             onClick={() => { setLinkModal(b.id); setPatientSearch(''); setPatientResults([]); setShowNewPatient(false); setNewPatientForm(EMPTY_PATIENT_FORM); }}
-                            className="text-xs text-slate-400 hover:text-indigo-600 border border-dashed border-slate-200 px-2 py-0.5 rounded-lg"
+                            className="text-xs text-zinc-500 hover:text-red-400 border border-dashed border-zinc-700 hover:border-red-500/50 px-2 py-0.5 rounded-lg"
                           >
                             Vincular paciente
                           </button>
@@ -396,12 +396,12 @@ export default function Bookings() {
                       </div>
                     </div>
 
-                    <div className="text-indigo-600 font-bold text-sm shrink-0">{formatTime(b.datetime_iso)}</div>
+                    <div className="text-red-400 font-bold text-sm shrink-0">{formatTime(b.datetime_iso)}</div>
                     <div className="flex items-center gap-2 shrink-0">
                       {b.patient_id && (
                         <button
                           onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
-                          className="text-xs border border-slate-200 px-2 py-1 rounded-lg text-slate-600 hover:bg-slate-50"
+                          className="text-xs border border-zinc-700 px-2 py-1 rounded-lg text-zinc-300 hover:bg-zinc-800"
                         >
                           Nueva consulta
                         </button>
@@ -412,7 +412,7 @@ export default function Bookings() {
                       <select
                         value={b.status}
                         onChange={(e) => changeStatus(b.id, e.target.value)}
-                        className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white"
+                        className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-red-500"
                       >
                         <option value="confirmed">Confirmada</option>
                         <option value="completed">Completada</option>
@@ -430,9 +430,9 @@ export default function Bookings() {
 
       {/* Modal vincular paciente */}
       {linkModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Vincular paciente</h2>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-2xl shadow-xl border border-zinc-800 w-full max-w-sm p-6">
+            <h2 className="text-lg font-bold text-white mb-4">Vincular paciente</h2>
             {!showNewPatient ? (
               <>
                 <input
@@ -446,42 +446,42 @@ export default function Bookings() {
                     key={p.id}
                     onClick={() => linkPatient(linkModal, p.id)}
                     disabled={linkSaving}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-xl text-sm mb-1"
+                    className="w-full text-left px-3 py-2 hover:bg-zinc-800 rounded-xl text-sm mb-1"
                   >
-                    <span className="font-medium">{p.name}</span>
-                    <span className="text-slate-400 text-xs ml-2 font-mono">{p.rut}</span>
+                    <span className="font-medium text-white">{p.name}</span>
+                    <span className="text-zinc-400 text-xs ml-2 font-mono">{p.rut}</span>
                   </button>
                 ))}
                 {patientSearch && patientResults.length === 0 && (
-                  <p className="text-slate-400 text-xs mb-3">No encontrado.</p>
+                  <p className="text-zinc-500 text-xs mb-3">No encontrado.</p>
                 )}
-                <button onClick={() => setShowNewPatient(true)} className="text-sm text-indigo-600 hover:underline mt-2 block">
+                <button onClick={() => setShowNewPatient(true)} className="text-sm text-red-400 hover:underline mt-2 block">
                   + Crear nuevo paciente
                 </button>
                 <div className="mt-4">
-                  <button onClick={() => setLinkModal(null)} className="w-full border border-slate-200 rounded-xl py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+                  <button onClick={() => setLinkModal(null)} className="w-full border border-zinc-700 rounded-xl py-2 text-sm text-zinc-300 hover:bg-zinc-800">Cancelar</button>
                 </div>
               </>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">RUT *</label>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">RUT *</label>
                   <input value={newPatientForm.rut} onChange={e => setNewPatientForm({ ...newPatientForm, rut: e.target.value })} placeholder="12.345.678-9" className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre *</label>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Nombre *</label>
                   <input value={newPatientForm.name} onChange={e => setNewPatientForm({ ...newPatientForm, name: e.target.value })} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Teléfono</label>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Teléfono</label>
                   <input value={newPatientForm.phone} onChange={e => setNewPatientForm({ ...newPatientForm, phone: e.target.value })} className={inputClass} />
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setShowNewPatient(false)} className="flex-1 border border-slate-200 rounded-xl py-2 text-sm text-slate-600 hover:bg-slate-50">Atrás</button>
+                  <button onClick={() => setShowNewPatient(false)} className="flex-1 border border-zinc-700 rounded-xl py-2 text-sm text-zinc-300 hover:bg-zinc-800">Atrás</button>
                   <button
                     onClick={() => createAndLink(linkModal)}
                     disabled={linkSaving || !newPatientForm.name}
-                    className="flex-1 bg-indigo-600 text-white rounded-xl py-2 text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50"
+                    className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
                   >
                     {linkSaving ? 'Guardando...' : 'Crear y vincular'}
                   </button>

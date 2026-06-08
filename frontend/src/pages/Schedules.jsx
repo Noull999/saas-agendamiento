@@ -37,18 +37,18 @@ export default function Schedules() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Horarios disponibles</h1>
-      <p className="text-sm text-gray-500 mb-6">Selecciona los horarios disponibles para cada día. Los clientes podrán elegir entre estos bloques al agendar.</p>
+      <h1 className="text-xl font-bold text-white mb-6">Horarios disponibles</h1>
+      <p className="text-sm text-zinc-400 mb-6">Selecciona los horarios disponibles para cada día. Los clientes podrán elegir entre estos bloques al agendar.</p>
 
       <div className="space-y-4">
         {[1, 2, 3, 4, 5, 6, 0].map((dow) => (
-          <div key={dow} className="bg-white rounded-xl border border-gray-200 p-4">
+          <div key={dow} className="bg-zinc-900 rounded-xl border border-zinc-700 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-900 text-sm">{DAYS[dow]}</h2>
+              <h2 className="font-semibold text-white text-sm">{DAYS[dow]}</h2>
               <button
                 onClick={() => save(dow)}
                 disabled={saving === dow}
-                className="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="text-xs bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 {saving === dow ? 'Guardando...' : 'Guardar'}
               </button>
@@ -62,8 +62,8 @@ export default function Schedules() {
                     onClick={() => toggleSlot(dow, slot)}
                     className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
                       active
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-500 border-gray-300 hover:border-blue-400'
+                        ? 'bg-red-600 text-white border-red-600'
+                        : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-red-500/50'
                     }`}
                   >
                     {slot}
@@ -72,7 +72,7 @@ export default function Schedules() {
               })}
             </div>
             {(schedules[dow] || []).length === 0 && (
-              <p className="text-xs text-gray-400 mt-2">Día sin horarios (no disponible)</p>
+              <p className="text-xs text-zinc-600 mt-2">Día sin horarios (no disponible)</p>
             )}
           </div>
         ))}

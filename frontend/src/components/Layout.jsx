@@ -10,16 +10,16 @@ export default function Layout({ children }) {
   const handleLogout = () => { logout(); navigate('/'); };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="w-60 bg-slate-900 flex flex-col shrink-0">
-        <div className="p-5 border-b border-slate-800">
+    <div className="flex min-h-screen bg-zinc-950">
+      <aside className="w-60 bg-zinc-950 flex flex-col shrink-0 border-r border-zinc-800">
+        <div className="p-5 border-b border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
               {business?.name?.[0]?.toUpperCase() || 'S'}
             </div>
             <div className="min-w-0">
               <span className="text-white font-semibold text-sm truncate block">{business?.name || 'Dashboard'}</span>
-              <span className="text-slate-500 text-xs capitalize">{business?.plan || 'basic'}</span>
+              <span className="text-zinc-500 text-xs capitalize">{business?.plan || 'basic'}</span>
             </div>
           </div>
         </div>
@@ -32,7 +32,7 @@ export default function Layout({ children }) {
                 <Link
                   key={to}
                   to="/dashboard/configuracion"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-800 hover:text-slate-300 transition-colors"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400 transition-colors"
                   title={`Requiere plan ${minPlan}`}
                 >
                   <span className="opacity-50">{icon}</span>
@@ -47,8 +47,8 @@ export default function Layout({ children }) {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      ? 'bg-red-600 text-white'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                   }`
                 }
               >
@@ -59,11 +59,11 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        <div className="p-3 border-t border-slate-800 space-y-1">
+        <div className="p-3 border-t border-zinc-800 space-y-1">
           {business?.plan === 'basic' && (
             <Link
               to="/dashboard/configuracion"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-colors"
             >
               ⚡ Subir a Pro
             </Link>
@@ -73,7 +73,7 @@ export default function Layout({ children }) {
               href={`/book/${business.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             >
               <span>🔗</span>
               Página pública
@@ -81,7 +81,7 @@ export default function Layout({ children }) {
           )}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
           >
             <span>🚪</span>
             Cerrar sesión
@@ -89,7 +89,7 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 p-8 overflow-auto bg-zinc-950">
         {children}
       </main>
     </div>

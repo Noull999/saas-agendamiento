@@ -5,14 +5,14 @@ import { VERTICALS } from '../config/verticals.config';
 
 const PLAN_ORDER = ['basic', 'pro', 'business'];
 const PLAN_BADGE = {
-  basic: 'bg-slate-100 text-slate-600',
-  pro: 'bg-indigo-100 text-indigo-700',
-  business: 'bg-violet-100 text-violet-700',
+  basic: 'bg-zinc-700 text-zinc-300',
+  pro: 'bg-red-500/20 text-red-400',
+  business: 'bg-violet-500/20 text-violet-400',
 };
 const PLAN_BORDER = {
-  basic: 'border-slate-200',
-  pro: 'border-indigo-400',
-  business: 'border-violet-400',
+  basic: 'border-zinc-700',
+  pro: 'border-red-500',
+  business: 'border-violet-500',
 };
 
 export default function Settings() {
@@ -75,22 +75,22 @@ export default function Settings() {
     }
   };
 
-  const inputClass = 'w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  const inputClass = 'w-full bg-zinc-800 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
 
-  if (loading) return <p className="text-slate-400 text-sm">Cargando...</p>;
+  if (loading) return <p className="text-zinc-500 text-sm">Cargando...</p>;
 
   const currentPlanIdx = PLAN_ORDER.indexOf(business?.plan || 'basic');
 
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Configuración</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Gestiona tu cuenta y plan</p>
+        <h1 className="text-2xl font-bold text-white">Configuración</h1>
+        <p className="text-zinc-400 text-sm mt-0.5">Gestiona tu cuenta y plan</p>
       </div>
 
       {/* Plans section */}
       <div>
-        <h2 className="text-base font-semibold text-slate-900 mb-4">Tu Plan</h2>
+        <h2 className="text-base font-semibold text-white mb-4">Tu Plan</h2>
         <div className="grid grid-cols-1 gap-4">
           {plans.map((plan) => {
             const isCurrent = plan.id === (business?.plan || 'basic');
@@ -103,33 +103,33 @@ export default function Settings() {
                 key={plan.id}
                 className={`rounded-2xl border-2 p-5 transition-all ${
                   isCurrent
-                    ? `${PLAN_BORDER[plan.id]} bg-white shadow-md`
-                    : 'border-slate-200 bg-white'
+                    ? `${PLAN_BORDER[plan.id]} bg-red-500/5 shadow-md shadow-red-500/10`
+                    : 'border-zinc-700 bg-zinc-900'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-slate-900">{plan.name}</h3>
+                      <h3 className="font-bold text-white">{plan.name}</h3>
                       {isCurrent && (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PLAN_BADGE[plan.id]}`}>
                           Plan actual
                         </span>
                       )}
                       {plan.highlight && !isCurrent && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
                           Recomendado
                         </span>
                       )}
                     </div>
-                    <p className="text-2xl font-bold text-slate-900">
+                    <p className="text-2xl font-bold text-white">
                       ${plan.price?.toLocaleString('es-CL')}
-                      <span className="text-sm font-normal text-slate-400"> CLP/mes</span>
+                      <span className="text-sm font-normal text-zinc-500"> CLP/mes</span>
                     </p>
                     <ul className="mt-3 space-y-1">
                       {plan.features?.map(f => (
-                        <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                          <span className="text-emerald-500 shrink-0">✓</span>
+                        <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
+                          <span className="text-emerald-400 shrink-0">✓</span>
                           {f}
                         </li>
                       ))}
@@ -137,17 +137,17 @@ export default function Settings() {
                   </div>
                   <div className="shrink-0 pt-1">
                     {isCurrent ? (
-                      <span className="text-sm text-slate-400 font-medium">Activo</span>
+                      <span className="text-sm text-zinc-500 font-medium">Activo</span>
                     ) : isUpgrade ? (
                       <button
                         onClick={() => handleUpgrade(plan.id)}
                         disabled={upgrading === plan.id}
-                        className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
                       >
                         {upgrading === plan.id ? 'Redirigiendo...' : 'Subir →'}
                       </button>
                     ) : isDowngrade ? (
-                      <span className="text-xs text-slate-400">Plan inferior</span>
+                      <span className="text-xs text-zinc-500">Plan inferior</span>
                     ) : null}
                   </div>
                 </div>
@@ -159,23 +159,23 @@ export default function Settings() {
 
       {/* Profile form */}
       <div>
-        <h2 className="text-base font-semibold text-slate-900 mb-4">Datos del negocio</h2>
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+        <h2 className="text-base font-semibold text-white mb-4">Datos del negocio</h2>
+        <form onSubmit={handleSubmit} className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-md shadow-black/20 p-6 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del negocio *</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Nombre del negocio *</label>
             <input name="name" value={form.name} onChange={handleChange} required className={inputClass} placeholder="Ej: Barbería Don José" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Teléfono de contacto</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Teléfono de contacto</label>
             <input name="phone" value={form.phone} onChange={handleChange} className={inputClass} placeholder="+56 9 1234 5678" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Descripción</label>
             <textarea name="description" value={form.description} onChange={handleChange} rows={3} className={`${inputClass} resize-none`} placeholder="Describe tu negocio..." />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de negocio</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Tipo de negocio</label>
             <div className="grid grid-cols-3 gap-3">
               {Object.values(VERTICALS).map(v => (
                 <button
@@ -183,12 +183,12 @@ export default function Settings() {
                   onClick={() => { setForm(f => ({ ...f, vertical: v.id })); setSaved(false); }}
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-center transition-all ${
                     form.vertical === v.id
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-red-500 bg-red-500/10'
+                      : 'border-zinc-700 hover:border-zinc-600'
                   }`}
                 >
                   <span className="text-2xl">{v.icon}</span>
-                  <p className={`text-xs font-semibold leading-tight ${form.vertical === v.id ? 'text-indigo-700' : 'text-slate-700'}`}>{v.label}</p>
+                  <p className={`text-xs font-semibold leading-tight ${form.vertical === v.id ? 'text-red-400' : 'text-zinc-300'}`}>{v.label}</p>
                 </button>
               ))}
             </div>
@@ -196,10 +196,10 @@ export default function Settings() {
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex items-center gap-4 pt-1">
-            <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium text-sm px-6 py-2.5 rounded-xl transition-colors">
+            <button type="submit" disabled={saving} className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium text-sm px-6 py-2.5 rounded-xl transition-colors">
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
-            {saved && <span className="text-emerald-600 text-sm font-medium">✓ Guardado</span>}
+            {saved && <span className="text-emerald-400 text-sm font-medium">✓ Guardado</span>}
           </div>
         </form>
       </div>
