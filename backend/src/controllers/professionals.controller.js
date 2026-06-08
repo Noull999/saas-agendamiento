@@ -30,6 +30,22 @@ const list = async (req, res) => {
 const create = async (req, res) => {
   const { name, specialty, email } = req.body;
   if (!name || !specialty) return res.status(400).json({ error: 'name y specialty son requeridos' });
+  // Check plan limit
+  const PLAN_LIMITS = { basic: 1, pro: 5, business: Infinity };
+  const limit = PLAN_LIMITS[req.business.plan] ?? 1;
+  if (limit !== Infinity) {
+    const { rows: countRows } = await db.query(
+      'SELECT COUNT(*) as n FROM professionals WHERE business_id = $1 AND active = 1',
+      [req.business.id]
+    );
+    if (parseInt(countRows[0].n) >= limit) {
+      return res.status(403).json({
+        error: `Tu plan ${req.business.plan} permite máximo ${limit} profesional(es). Actualiza para agregar más.`,
+        requiredPlan: limit === 1 ? 'pro' : 'business',
+        currentPlan: req.business.plan,
+      });
+    }
+  }
   try {
     const { rows } = await db.query(
       'INSERT INTO professionals (business_id, name, specialty, email) VALUES ($1, $2, $3, $4) RETURNING *',
