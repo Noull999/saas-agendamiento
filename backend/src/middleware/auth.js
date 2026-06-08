@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db/database');
 
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
   const header = req.headers['authorization'];
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token requerido' });
@@ -15,17 +15,25 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 
-  // Verificar que el token no fue invalidado por logout
-  const business = db.prepare('SELECT id, token_version FROM businesses WHERE id = ?').get(payload.id);
-  if (!business) return res.status(401).json({ error: 'Token inválido o expirado' });
+  try {
+    const { rows } = await db.query(
+      'SELECT id, token_version FROM businesses WHERE id = $1',
+      [payload.id]
+    );
+    const business = rows[0];
+    if (!business) return res.status(401).json({ error: 'Token inválido o expirado' });
 
-  const tokenVersion = payload.tv ?? 0;
-  if (tokenVersion !== business.token_version) {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+    const tokenVersion = payload.tv ?? 0;
+    if (tokenVersion !== business.token_version) {
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+
+    req.business = payload;
+    next();
+  } catch (err) {
+    console.error('[auth] DB error:', err.message);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
-
-  req.business = payload;
-  next();
 }
 
 module.exports = authMiddleware;
