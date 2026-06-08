@@ -16,10 +16,10 @@ export const VERTICALS = {
       { to: '/dashboard', label: 'Reservas', icon: '📅' },
       { to: '/dashboard/servicios', label: 'Servicios', icon: '🛠' },
       { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
-      { to: '/dashboard/pacientes', label: 'Pacientes', icon: '👤' },
-      { to: '/dashboard/consultas', label: 'Consultas', icon: '🩺' },
+      { to: '/dashboard/pacientes', label: 'Pacientes', icon: '👤', minPlan: 'pro' },
+      { to: '/dashboard/consultas', label: 'Consultas', icon: '🩺', minPlan: 'pro' },
       { to: '/dashboard/profesionales', label: 'Profesionales', icon: '👥', minPlan: 'pro' },
-      { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
+      { to: '/dashboard/analytics', label: 'Analytics', icon: '📊', minPlan: 'pro' },
       { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
     ],
     booking: { showRut: true, clientLabel: 'Paciente' },
@@ -42,9 +42,9 @@ export const VERTICALS = {
       { to: '/dashboard', label: 'Reservas', icon: '📅' },
       { to: '/dashboard/servicios', label: 'Servicios', icon: '✂️' },
       { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
-      { to: '/dashboard/clientes', label: 'Clientes', icon: '👤' },
+      { to: '/dashboard/clientes', label: 'Clientes', icon: '👤', minPlan: 'pro' },
       { to: '/dashboard/profesionales', label: 'Estilistas', icon: '👥', minPlan: 'pro' },
-      { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
+      { to: '/dashboard/analytics', label: 'Analytics', icon: '📊', minPlan: 'pro' },
       { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
     ],
     booking: { showRut: false, clientLabel: 'Cliente' },
@@ -67,16 +67,16 @@ export const VERTICALS = {
       { to: '/dashboard', label: 'Reservas', icon: '📅' },
       { to: '/dashboard/servicios', label: 'Servicios', icon: '🛠' },
       { to: '/dashboard/horarios', label: 'Horarios', icon: '🕐' },
-      { to: '/dashboard/clientes', label: 'Clientes', icon: '👤' },
+      { to: '/dashboard/clientes', label: 'Clientes', icon: '👤', minPlan: 'pro' },
       { to: '/dashboard/profesionales', label: 'Profesionales', icon: '👥', minPlan: 'pro' },
-      { to: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
+      { to: '/dashboard/analytics', label: 'Analytics', icon: '📊', minPlan: 'pro' },
       { to: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️' },
     ],
     booking: { showRut: false, clientLabel: 'Cliente' },
   },
 };
 
-const PLAN_ORDER = ['basic', 'pro', 'clinica'];
+const PLAN_ORDER = ['basic', 'pro', 'business'];
 
 export function meetsMinPlan(currentPlan, minPlan) {
   if (!minPlan) return true;
