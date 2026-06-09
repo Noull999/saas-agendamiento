@@ -157,7 +157,7 @@ export default function BookingPage() {
     setPaymentLoading(true);
     try {
       const { data } = await axios.post('/api/payments/preference', {
-        booking_id: createdBooking.id,
+        booking_id: createdBooking.booking_id ?? createdBooking.id,
         service_id: selectedService?.id,
         amount: selectedService?.price,
         client_email: form.client_email || undefined,
