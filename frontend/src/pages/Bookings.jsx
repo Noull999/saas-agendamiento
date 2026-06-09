@@ -169,6 +169,105 @@ function CalendarView({ bookings, navigate }) {
   );
 }
 
+// ─── Monthly calendar view ───────────────────────────────────────────────────
+function MonthView({ bookings, navigate }) {
+  const [month, setMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+
+  const year = month.getFullYear();
+  const mon  = month.getMonth();
+  const firstDay = new Date(year, mon, 1);
+  const lastDay  = new Date(year, mon + 1, 0);
+
+  const startDow = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Monday=0
+  const totalCells = startDow + lastDay.getDate();
+  const rows = Math.ceil(totalCells / 7);
+
+  const byDate = {};
+  bookings.forEach(b => {
+    const key = b.datetime_iso.slice(0, 10);
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(b);
+  });
+
+  const cells = [];
+  for (let i = 0; i < rows * 7; i++) {
+    const dayNum = i - startDow + 1;
+    cells.push(dayNum >= 1 && dayNum <= lastDay.getDate()
+      ? new Date(year, mon, dayNum)
+      : null
+    );
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const MONTHS_CAP = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setMonth(new Date(year, mon - 1, 1))}
+          className="p-2 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-sm transition-colors"
+        >
+          ← Anterior
+        </button>
+        <div className="text-center">
+          <span className="text-white font-semibold">{MONTHS_CAP[mon]} {year}</span>
+          <button
+            onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}
+            className="block text-xs text-red-400 hover:underline mt-0.5 mx-auto"
+          >
+            Ir a este mes
+          </button>
+        </div>
+        <button
+          onClick={() => setMonth(new Date(year, mon + 1, 1))}
+          className="p-2 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-sm transition-colors"
+        >
+          Siguiente →
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => (
+          <div key={d} className="text-center text-xs text-zinc-500 py-1">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} className="h-20 rounded-lg bg-zinc-900/30" />;
+          const dateStr = `${year}-${String(mon+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const dayBookings = byDate[dateStr] || [];
+          const isToday = dateStr === todayStr;
+          return (
+            <div
+              key={i}
+              className={`h-20 rounded-lg p-1.5 border cursor-pointer hover:border-zinc-600 transition-colors overflow-hidden ${
+                isToday ? 'border-red-500/50 bg-red-500/5' : 'border-zinc-800 bg-zinc-900'
+              }`}
+              onClick={() => navigate(`/dashboard?date=${dateStr}`)}
+            >
+              <span className={`text-xs font-medium ${isToday ? 'text-red-400' : 'text-zinc-400'}`}>
+                {d.getDate()}
+              </span>
+              {dayBookings.slice(0, 2).map(b => (
+                <div key={b.id} className="mt-0.5 text-[10px] bg-red-500/20 text-red-300 rounded px-1 truncate">
+                  {b.datetime_iso.slice(11, 16)} {b.client_name.split(' ')[0]}
+                </div>
+              ))}
+              {dayBookings.length > 2 && (
+                <div className="text-[10px] text-zinc-500 mt-0.5">+{dayBookings.length - 2} más</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 const EMPTY_PATIENT_FORM = { rut: '', name: '', phone: '', email: '' };
 
@@ -271,6 +370,12 @@ export default function Bookings() {
             >
               Semana
             </button>
+            <button
+              onClick={() => setViewMode('mes')}
+              className={`px-4 py-2 font-medium transition-colors ${viewMode === 'mes' ? 'bg-red-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}
+            >
+              Mes
+            </button>
           </div>
           {/* Status filter (only in list mode) */}
           {viewMode === 'lista' && (
@@ -337,6 +442,14 @@ export default function Bookings() {
           />
         </div>
       )}
+
+      {/* ── MONTH VIEW ── */}
+      {!loading && viewMode === 'mes' && bookings.length > 0 && (
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 shadow-md shadow-black/20">
+          <MonthView bookings={bookings} navigate={navigate} />
+        </div>
+      )}
+      {!loading && viewMode === 'mes' && bookings.length === 0 && null}
 
       {/* ── LIST VIEW ── */}
       {!loading && viewMode === 'lista' && (
