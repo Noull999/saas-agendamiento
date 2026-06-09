@@ -163,6 +163,7 @@ export default function BookingPage() {
         client_email: form.client_email || undefined,
         client_name: form.client_name,
       });
+      if (!data.init_point) throw new Error('No se recibió link de pago de Mercado Pago');
       window.location.href = data.init_point;
     } catch (err) {
       toast.error('Error iniciando pago: ' + (err.response?.data?.error || err.message));
@@ -182,7 +183,7 @@ export default function BookingPage() {
       <div className="lg:w-80 bg-gradient-to-b from-zinc-950 to-zinc-900 border-b lg:border-b-0 lg:border-r border-zinc-800 text-white p-8 lg:p-10 flex flex-col">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg shadow-red-500/30">
-            {business.name[0].toUpperCase()}
+            {(business.name?.[0] || '?').toUpperCase()}
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight">{business.name}</h1>

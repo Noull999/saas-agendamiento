@@ -25,7 +25,7 @@ async function resolveToken(businessId) {
   }
 }
 
-// POST /api/payments/preference   (auth required)
+// POST /api/payments/preference   (public — called from booking page without JWT)
 const createPreference = async (req, res) => {
   const { booking_id, service_id, amount, client_email, client_name } = req.body;
 
@@ -34,30 +34,48 @@ const createPreference = async (req, res) => {
   }
 
   try {
-    const mpToken = await resolveToken(req.business.id);
+    // Resolve business_id: from JWT (dashboard) or from booking_id (public page)
+    let businessId = req.business?.id || null;
+    let bizSlug = null;
+
+    if (!businessId && booking_id) {
+      const { rows } = await db.query(
+        'SELECT b.business_id, biz.slug FROM bookings b JOIN businesses biz ON biz.id = b.business_id WHERE b.id = $1',
+        [booking_id]
+      );
+      if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
+      businessId = rows[0].business_id;
+      bizSlug = rows[0].slug;
+    }
+
+    if (!businessId) {
+      return res.status(400).json({ error: 'Se requiere booking_id' });
+    }
+
+    const mpToken = await resolveToken(businessId);
     if (!mpToken) {
       return res.status(400).json({ error: 'Mercado Pago no configurado para este negocio' });
     }
 
-    const client = getMP(mpToken);
-    const preference = new Preference(client);
+    const mpClient = getMP(mpToken);
+    const preference = new Preference(mpClient);
 
-    // Fetch service name for the item title
+    // Fetch service name
     let serviceName = 'Consulta';
-    if (service_id) {
+    const parsedServiceId = service_id != null ? parseInt(service_id, 10) : null;
+    if (parsedServiceId) {
       const { rows: svc } = await db.query(
         'SELECT name FROM services WHERE id = $1 AND business_id = $2',
-        [service_id, req.business.id]
+        [parsedServiceId, businessId]
       );
       if (svc[0]) serviceName = svc[0].name;
     }
 
-    // Fetch business slug for back_urls
-    const { rows: biz } = await db.query(
-      'SELECT slug FROM businesses WHERE id = $1',
-      [req.business.id]
-    );
-    const slug = biz[0]?.slug || '';
+    // Fetch slug if not already resolved
+    if (!bizSlug) {
+      const { rows: biz } = await db.query('SELECT slug FROM businesses WHERE id = $1', [businessId]);
+      bizSlug = biz[0]?.slug || '';
+    }
 
     const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
     const backendBase  = process.env.BACKEND_URL  || 'http://localhost:3001';
@@ -75,9 +93,9 @@ const createPreference = async (req, res) => {
           name:  client_name  || undefined,
         },
         back_urls: {
-          success: `${frontendBase}/book/${slug}?payment=success`,
-          failure: `${frontendBase}/book/${slug}?payment=failure`,
-          pending: `${frontendBase}/book/${slug}?payment=pending`,
+          success: `${frontendBase}/book/${bizSlug}?payment=success`,
+          failure: `${frontendBase}/book/${bizSlug}?payment=failure`,
+          pending: `${frontendBase}/book/${bizSlug}?payment=pending`,
         },
         auto_return: 'approved',
         notification_url: `${backendBase}/api/payments/webhook`,
@@ -85,11 +103,24 @@ const createPreference = async (req, res) => {
       },
     });
 
-    // Persist the preference in the payments table
+    // Persist preference (create table on first use if migration hasn't run yet)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id               BIGSERIAL PRIMARY KEY,
+        business_id      BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        booking_id       BIGINT    REFERENCES bookings(id),
+        mp_preference_id TEXT,
+        mp_payment_id    TEXT,
+        amount           NUMERIC   NOT NULL,
+        currency         TEXT      NOT NULL DEFAULT 'CLP',
+        status           TEXT      NOT NULL DEFAULT 'pending',
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
     await db.query(
       `INSERT INTO payments (business_id, booking_id, mp_preference_id, amount, currency)
        VALUES ($1, $2, $3, $4, 'CLP')`,
-      [req.business.id, booking_id || null, result.id, Number(amount)]
+      [businessId, booking_id ? parseInt(booking_id, 10) : null, result.id, Number(amount)]
     );
 
     return res.json({ preference_id: result.id, init_point: result.init_point });
