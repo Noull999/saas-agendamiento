@@ -194,11 +194,9 @@ export default function BookingPage() {
               {selectedSlot && <div className="flex justify-between"><span className="text-zinc-500">Hora</span><span className="font-medium text-white">{selectedSlot} hrs</span></div>}
               <div className="flex justify-between"><span className="text-zinc-500">Nombre</span><span className="font-medium text-white">{form.client_name}</span></div>
             </div>
-            {(form.client_phone || form.client_email) && (
+            {form.client_phone && (
               <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
-                {form.client_email
-                  ? `📧 Enviamos la confirmación a ${form.client_email}`
-                  : `📱 Te enviaremos la confirmación al ${form.client_phone}`}
+                📱 Te enviaremos la confirmación al WhatsApp {form.client_phone}
               </p>
             )}
 
