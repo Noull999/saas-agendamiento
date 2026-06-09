@@ -249,9 +249,10 @@ const publicCreate = async (req, res) => {
   const phone = clipString(req.body.client_phone, 30);
   const rut = clipString(req.body.client_rut, 20);
   const notes = clipString(req.body.notes, 500);
-  const serviceId = req.body.service_id;
-
-  if (serviceId !== undefined && serviceId !== null && !Number.isInteger(serviceId)) {
+  // service_id may arrive as string ("5") from JSON when IDs are BIGSERIAL
+  const rawServiceId = req.body.service_id;
+  const serviceId = rawServiceId != null ? parseInt(rawServiceId, 10) : null;
+  if (serviceId !== null && (isNaN(serviceId) || serviceId <= 0)) {
     return res.status(400).json({ error: 'service_id inválido' });
   }
 

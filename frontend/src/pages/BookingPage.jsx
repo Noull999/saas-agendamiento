@@ -233,40 +233,73 @@ export default function BookingPage() {
         {/* Step 5: Opción de pago */}
         {step === 5 && (
           <div className="max-w-md mx-auto pt-8">
-            <div className="w-16 h-16 bg-blue-500/20 border border-blue-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">💳</div>
-            <h2 className="text-2xl font-bold text-white mb-2 text-center">¿Cómo deseas pagar?</h2>
-            <p className="text-zinc-400 mb-8 text-center text-sm">Tu reserva está confirmada. Puedes pagar ahora o al momento de la consulta.</p>
+            <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-5">✅</div>
+            <h2 className="text-2xl font-bold text-white mb-1 text-center">¡Reserva confirmada!</h2>
+            <p className="text-zinc-400 mb-6 text-center text-sm">Elige cómo vas a pagar</p>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-sm space-y-2 mb-8">
+            {/* Resumen */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm space-y-2 mb-6">
               {selectedService && <div className="flex justify-between"><span className="text-zinc-500">Servicio</span><span className="font-medium text-white">{selectedService.name}</span></div>}
               {selectedDate && <div className="flex justify-between"><span className="text-zinc-500">Fecha</span><span className="font-medium capitalize text-white">{DAYS[selectedDate.getDay()]} {selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]}</span></div>}
               {selectedSlot && <div className="flex justify-between"><span className="text-zinc-500">Hora</span><span className="font-medium text-white">{selectedSlot} hrs</span></div>}
               {selectedService?.price && (
                 <div className="flex justify-between border-t border-zinc-800 pt-2 mt-2">
-                  <span className="text-zinc-500">Total</span>
-                  <span className="font-bold text-white">${Number(selectedService.price).toLocaleString('es-CL')}</span>
+                  <span className="text-zinc-500 font-medium">Total</span>
+                  <span className="font-bold text-white text-base">${Number(selectedService.price).toLocaleString('es-CL')}</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-3">
+            {/* Opciones de pago */}
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">Método de pago</p>
+            <div className="space-y-2">
+              {/* Pagar online */}
               <button
                 onClick={handlePaymentNow}
                 disabled={paymentLoading}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
+                className="w-full p-4 bg-blue-600/10 hover:bg-blue-600/20 border-2 border-blue-500/50 hover:border-blue-500 disabled:opacity-50 text-left rounded-2xl transition-all group"
               >
-                {paymentLoading ? (
-                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Redirigiendo...</span>
-                ) : (
-                  <>💳 Pagar ahora — ${Number(selectedService?.price || 0).toLocaleString('es-CL')}</>
-                )}
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💳</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-white text-sm">Pagar ahora con tarjeta</p>
+                    <p className="text-zinc-400 text-xs">Tarjeta de crédito o débito · Pago seguro con Mercado Pago</p>
+                  </div>
+                  {paymentLoading
+                    ? <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                    : <span className="text-blue-400 text-xs font-semibold shrink-0">${Number(selectedService?.price || 0).toLocaleString('es-CL')} →</span>
+                  }
+                </div>
               </button>
+
+              {/* Débito / tarjeta presencial */}
               <button
                 onClick={handlePaymentLater}
                 disabled={paymentLoading}
-                className="w-full py-3 bg-zinc-900 border border-zinc-700 text-zinc-300 hover:bg-zinc-800 rounded-xl font-medium transition-colors text-sm"
+                className="w-full p-4 bg-zinc-900 hover:bg-zinc-800 border-2 border-zinc-700 hover:border-zinc-600 disabled:opacity-50 text-left rounded-2xl transition-all"
               >
-                📍 Pagar en la consulta
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🏧</span>
+                  <div>
+                    <p className="font-semibold text-white text-sm">Débito o tarjeta en el lugar</p>
+                    <p className="text-zinc-400 text-xs">Pagas con tu tarjeta al llegar a la consulta</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Efectivo */}
+              <button
+                onClick={handlePaymentLater}
+                disabled={paymentLoading}
+                className="w-full p-4 bg-zinc-900 hover:bg-zinc-800 border-2 border-zinc-700 hover:border-zinc-600 disabled:opacity-50 text-left rounded-2xl transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💵</span>
+                  <div>
+                    <p className="font-semibold text-white text-sm">Efectivo en el lugar</p>
+                    <p className="text-zinc-400 text-xs">Llevas el dinero el día de la consulta</p>
+                  </div>
+                </div>
               </button>
             </div>
           </div>

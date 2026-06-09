@@ -37,6 +37,8 @@ export default function Settings() {
   const [upgrading, setUpgrading] = useState(null);
   const [templates, setTemplates] = useState(null);
   const [savingTemplate, setSavingTemplate] = useState(null);
+  const [templatePreviews, setTemplatePreviews] = useState({});
+  const [emailExpanded, setEmailExpanded] = useState({});
   const [mpToken, setMpToken] = useState('');
   const [mpEnabled, setMpEnabled] = useState(false);
   const [mpTokenConfigured, setMpTokenConfigured] = useState(false);
@@ -68,7 +70,17 @@ export default function Settings() {
         vertical: data.vertical || 'salud',
       });
       setPlans(plansRes.data.plans || []);
-      setTemplates(templatesRes.data);
+      const tdata = templatesRes.data || {};
+      setTemplates(tdata);
+      // Initialize previews with current content
+      const previews = {};
+      for (const [type, channels] of Object.entries(tdata)) {
+        previews[type] = {};
+        for (const [ch, val] of Object.entries(channels || {})) {
+          previews[type][ch] = val?.content || '';
+        }
+      }
+      setTemplatePreviews(previews);
       setMpEnabled(mpSettingsRes.data.mp_enabled || false);
       setMpTokenConfigured(mpSettingsRes.data.mp_token_configured || false);
       setLoading(false);
@@ -452,115 +464,177 @@ export default function Settings() {
       )}
 
       {/* ── TAB: MENSAJES ── */}
-      {activeTab === 'mensajes' && templates && (
-        <div className="space-y-5">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-            <h2 className="text-base font-semibold text-white mb-1">Mensajes automáticos</h2>
-            <p className="text-zinc-400 text-xs mb-5">
-              Personaliza los mensajes que reciben tus clientes por WhatsApp y correo.
-              Si los dejas en blanco, se usará el texto por defecto.
-            </p>
+      {activeTab === 'mensajes' && templates && (() => {
+        const PREVIEW_VARS = {
+          clientName: 'María González',
+          businessName: form.name || 'Tu negocio',
+          serviceName: 'Consulta General',
+          date: 'lunes 15 de junio',
+          time: '10:30',
+          cancelLink: 'tuagenda.cl/cancel/abc123',
+        };
+        const CHIPS = [
+          { var: 'clientName',   label: 'Nombre del cliente' },
+          { var: 'businessName', label: 'Nombre del negocio' },
+          { var: 'serviceName',  label: 'Servicio' },
+          { var: 'date',         label: 'Fecha' },
+          { var: 'time',         label: 'Hora' },
+          { var: 'cancelLink',   label: 'Link cancelar' },
+        ];
+        const renderPreview = (text) =>
+          (text || '').replace(/\{\{(\w+)\}\}/g, (_, k) =>
+            `<strong class="font-semibold">${PREVIEW_VARS[k] || k}</strong>`
+          );
+
+        return (
+          <div className="space-y-4">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+              <p className="text-zinc-400 text-sm">
+                📱 Escribe aquí lo que recibirán tus clientes por WhatsApp. Si quieres agregar el nombre del cliente o la fecha automáticamente, usa las etiquetas de abajo.
+              </p>
+            </div>
 
             {[
-              { key: 'booking_confirmation', label: '✅ Confirmación de reserva', desc: 'Se envía cuando el cliente confirma su hora' },
-              { key: 'reminder',             label: '⏰ Recordatorio',            desc: 'Se envía 24 horas antes de la cita' },
-              { key: 'cancellation',         label: '❌ Cancelación',             desc: 'Se envía cuando se cancela una reserva' },
-            ].map(({ key, label, desc }) => (
+              { key: 'booking_confirmation', icon: '✅', label: 'Cuando alguien reserva', desc: 'El cliente recibe este mensaje al confirmar su hora' },
+              { key: 'reminder',             icon: '⏰', label: 'Recordatorio (24h antes)', desc: 'Se envía automáticamente el día anterior a la cita' },
+              { key: 'cancellation',         icon: '❌', label: 'Cuando se cancela',         desc: 'Se envía cuando se cancela una reserva' },
+            ].map(({ key, icon, label, desc }) => (
               templates[key] && (
-                <div key={key} className="mb-6 last:mb-0">
-                  <div className="mb-3">
-                    <h3 className="text-white font-medium text-sm">{label}</h3>
-                    <p className="text-zinc-500 text-xs">{desc}</p>
+                <div key={key} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-800">
+                    <span className="text-xl">{icon}</span>
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">{label}</h3>
+                      <p className="text-zinc-500 text-xs">{desc}</p>
+                    </div>
+                    {templates[key]?.whatsapp?.customized && (
+                      <span className="ml-auto text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Personalizado</span>
+                    )}
                   </div>
 
-                  <div className="space-y-3">
-                    {/* WhatsApp */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-medium text-zinc-400 flex items-center gap-1">
-                          <span className="text-green-400">●</span> Mensaje de WhatsApp
+                  <div className="p-5 space-y-4">
+                    {/* WhatsApp editor + preview side by side */}
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      {/* Editor */}
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 mb-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full" /> Mensaje de WhatsApp
+                          {savingTemplate === `${key}:whatsapp` && <span className="text-zinc-500 ml-auto">Guardando...</span>}
                         </label>
-                        {savingTemplate === `${key}:whatsapp` && (
-                          <span className="text-xs text-zinc-500">Guardando...</span>
-                        )}
-                        {templates[key]?.whatsapp?.customized && savingTemplate !== `${key}:whatsapp` && (
-                          <span className="text-xs text-emerald-500">✓ Personalizado</span>
-                        )}
+                        <textarea
+                          key={`${key}-wa`}
+                          defaultValue={templates[key]?.whatsapp?.content || ''}
+                          onChange={e => setTemplatePreviews(prev => ({
+                            ...prev,
+                            [key]: { ...(prev[key] || {}), whatsapp: e.target.value },
+                          }))}
+                          onBlur={e => {
+                            const val = e.target.value;
+                            if (val !== templates[key]?.whatsapp?.content) saveTemplate(key, 'whatsapp', val);
+                          }}
+                          rows={5}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                          placeholder="Escribe el mensaje aquí..."
+                        />
                       </div>
-                      <textarea
-                        key={`${key}-wa-${templates[key]?.whatsapp?.content?.slice(0,10)}`}
-                        defaultValue={templates[key]?.whatsapp?.content || ''}
-                        onBlur={e => {
-                          const val = e.target.value;
-                          if (val !== templates[key]?.whatsapp?.content) saveTemplate(key, 'whatsapp', val);
-                        }}
-                        rows={3}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-y"
-                        placeholder="Escribe el mensaje de WhatsApp..."
-                      />
+
+                      {/* Preview */}
+                      <div>
+                        <label className="text-xs font-medium text-zinc-400 mb-2 block">Vista previa</label>
+                        <div className="bg-zinc-950 rounded-xl border border-zinc-800 p-3 min-h-[116px]">
+                          {/* Fake WhatsApp bubble */}
+                          <div className="flex justify-end">
+                            <div className="bg-green-800 rounded-2xl rounded-tr-sm px-3 py-2 max-w-[90%]">
+                              <p
+                                className="text-white text-xs leading-relaxed whitespace-pre-wrap"
+                                dangerouslySetInnerHTML={{
+                                  __html: renderPreview(
+                                    templatePreviews[key]?.whatsapp !== undefined
+                                      ? templatePreviews[key].whatsapp
+                                      : (templates[key]?.whatsapp?.content || '')
+                                  ) || '<span class="opacity-40 not-italic">Escribe un mensaje para ver la vista previa</span>',
+                                }}
+                              />
+                              <p className="text-green-300 text-[10px] text-right mt-1 opacity-70">10:30 ✓✓</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Email subject */}
+                    {/* Variable chips */}
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-medium text-zinc-400 flex items-center gap-1">
-                          <span className="text-blue-400">●</span> Asunto del correo
-                        </label>
-                        {savingTemplate === `${key}:email_subject` && (
-                          <span className="text-xs text-zinc-500">Guardando...</span>
-                        )}
+                      <p className="text-xs text-zinc-500 mb-2">📎 Etiquetas automáticas — cópialas y pégalas en el mensaje:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {CHIPS.map(c => (
+                          <button
+                            key={c.var}
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`{{${c.var}}}`);
+                              toast.success(`"{{${c.var}}}" copiado — pégalo en el mensaje`);
+                            }}
+                            className="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 px-2.5 py-1 rounded-lg transition-colors"
+                          >
+                            {c.label}
+                          </button>
+                        ))}
                       </div>
-                      <input
-                        key={`${key}-es-${templates[key]?.email_subject?.content?.slice(0,10)}`}
-                        type="text"
-                        defaultValue={templates[key]?.email_subject?.content || ''}
-                        onBlur={e => {
-                          const val = e.target.value;
-                          if (val !== templates[key]?.email_subject?.content) saveTemplate(key, 'email_subject', val);
-                        }}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        placeholder="Asunto del correo electrónico..."
-                      />
                     </div>
 
-                    {/* Email body */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-medium text-zinc-400 flex items-center gap-1">
-                          <span className="text-blue-400">●</span> Contenido del correo
-                        </label>
-                        {savingTemplate === `${key}:email_body` && (
-                          <span className="text-xs text-zinc-500">Guardando...</span>
-                        )}
-                      </div>
-                      <textarea
-                        key={`${key}-eb-${templates[key]?.email_body?.content?.slice(0,10)}`}
-                        defaultValue={templates[key]?.email_body?.content || ''}
-                        onBlur={e => {
-                          const val = e.target.value;
-                          if (val !== templates[key]?.email_body?.content) saveTemplate(key, 'email_body', val);
-                        }}
-                        rows={4}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-y"
-                        placeholder="Contenido del correo (puedes usar HTML básico)..."
-                      />
+                    {/* Email accordion */}
+                    <div className="border-t border-zinc-800 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setEmailExpanded(prev => ({ ...prev, [key]: !prev[key] }))}
+                        className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
+                      >
+                        <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                        Configurar también el correo electrónico
+                        <span className="ml-1">{emailExpanded[key] ? '▲' : '▼'}</span>
+                      </button>
+
+                      {emailExpanded[key] && (
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <label className="text-xs text-zinc-400 mb-1.5 block">Asunto del correo</label>
+                            <input
+                              key={`${key}-es`}
+                              type="text"
+                              defaultValue={templates[key]?.email_subject?.content || ''}
+                              onBlur={e => {
+                                const val = e.target.value;
+                                if (val !== templates[key]?.email_subject?.content) saveTemplate(key, 'email_subject', val);
+                              }}
+                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Ej: Tu reserva está confirmada"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-zinc-400 mb-1.5 block">Contenido del correo</label>
+                            <textarea
+                              key={`${key}-eb`}
+                              defaultValue={templates[key]?.email_body?.content || ''}
+                              onBlur={e => {
+                                const val = e.target.value;
+                                if (val !== templates[key]?.email_body?.content) saveTemplate(key, 'email_body', val);
+                              }}
+                              rows={4}
+                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                              placeholder="Texto del correo (puedes usar HTML básico)..."
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  {key !== 'cancellation' && <div className="mt-4 border-t border-zinc-800" />}
-
-                  <p className="text-xs text-zinc-600 mt-3">
-                    Palabras clave disponibles:{' '}
-                    <span className="font-mono text-zinc-500">
-                      {'{{clientName}} {{businessName}} {{serviceName}} {{date}} {{time}} {{cancelLink}}'}
-                    </span>
-                  </p>
                 </div>
               )
             ))}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── TAB: INTEGRACIONES ── */}
       {activeTab === 'integraciones' && (
