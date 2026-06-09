@@ -14,7 +14,8 @@ export default function Professionals() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const isPro = business?.plan === 'pro' || business?.plan === 'clinic';
+  // Pro y Business tienen acceso (Business es el tier superior)
+  const isPro = business?.plan === 'pro' || business?.plan === 'business';
 
   const load = async () => {
     setLoading(true);
