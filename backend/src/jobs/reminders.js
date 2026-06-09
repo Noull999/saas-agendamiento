@@ -19,8 +19,18 @@ async function sendReminders() {
       LEFT JOIN businesses  bs ON b.business_id  = bs.id
       WHERE  b.reminded = 0
         AND  b.status   = 'confirmed'
-        AND  b.datetime_iso >= $1
-        AND  b.datetime_iso <= $2
+        AND  (
+          CASE WHEN b.datetime_iso ~ 'T.*[Z+\\-][0-9]'
+               THEN b.datetime_iso::timestamptz
+               ELSE (b.datetime_iso || '-04:00')::timestamptz
+          END
+        ) >= $1::timestamptz
+        AND  (
+          CASE WHEN b.datetime_iso ~ 'T.*[Z+\\-][0-9]'
+               THEN b.datetime_iso::timestamptz
+               ELSE (b.datetime_iso || '-04:00')::timestamptz
+          END
+        ) <= $2::timestamptz
         AND  bs.plan IN ('pro', 'business')
     `, [from, to]);
     bookings = rows;
