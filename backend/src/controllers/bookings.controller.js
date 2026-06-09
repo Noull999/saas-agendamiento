@@ -194,6 +194,14 @@ const remove = async (req, res) => {
 const publicCreate = async (req, res) => {
   const { slug } = req.params;
 
+  // Helper to parse datetime safely with Chile timezone assumption
+  function parseDatetimeSafe(iso) {
+    // If already has explicit TZ (Z, +, or - after the time), parse directly
+    if (/T.*[Z+\-]/.test(iso)) return new Date(iso);
+    // No TZ: assume Chile Standard Time (UTC-4)
+    return new Date(iso + '-04:00');
+  }
+
   const name = clipString(req.body.client_name, 100);
   if (!name) return res.status(400).json({ error: 'client_name es requerido' });
 
@@ -201,7 +209,11 @@ const publicCreate = async (req, res) => {
   if (!datetime_iso || typeof datetime_iso !== 'string' || !DATETIME_RE.test(datetime_iso)) {
     return res.status(400).json({ error: 'datetime_iso inválido' });
   }
-  if (new Date(datetime_iso) <= new Date()) {
+  const bookingDate = parseDatetimeSafe(datetime_iso);
+  if (isNaN(bookingDate.getTime())) {
+    return res.status(400).json({ error: 'datetime_iso inválido' });
+  }
+  if (bookingDate <= new Date()) {
     return res.status(400).json({ error: 'No se puede reservar en una fecha pasada' });
   }
 
