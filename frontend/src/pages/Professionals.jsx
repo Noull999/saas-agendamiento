@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
 import { SkeletonCard } from '../components/Skeleton';
 
-const EMPTY_FORM = { name: '', specialty: '', email: '' };
+const EMPTY_FORM = { name: '', specialty: '', email: '', commission_pct: 0, commission_fixed: 0 };
 
 export default function Professionals() {
   const { business } = useAuth();
@@ -48,17 +48,24 @@ export default function Professionals() {
   }
 
   const openNew = () => { setEditingId(null); setForm(EMPTY_FORM); setError(''); setShowModal(true); };
-  const openEdit = (p) => { setEditingId(p.id); setForm({ name: p.name, specialty: p.specialty, email: p.email || '' }); setError(''); setShowModal(true); };
+  const openEdit = (p) => { setEditingId(p.id); setForm({ name: p.name, specialty: p.specialty, email: p.email || '', commission_pct: p.commission_pct ?? 0, commission_fixed: p.commission_fixed ?? 0 }); setError(''); setShowModal(true); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError('');
     try {
+      const payload = {
+        name: form.name,
+        specialty: form.specialty,
+        email: form.email,
+        commission_pct: parseFloat(form.commission_pct) || 0,
+        commission_fixed: parseFloat(form.commission_fixed) || 0,
+      };
       if (editingId) {
-        await api.put(`/professionals/${editingId}`, form);
+        await api.put(`/professionals/${editingId}`, payload);
       } else {
-        await api.post('/professionals', form);
+        await api.post('/professionals', payload);
       }
       setShowModal(false);
       load();
@@ -123,6 +130,13 @@ export default function Professionals() {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-white text-sm">{p.name}</p>
               <p className="text-zinc-400 text-xs">{p.specialty}{p.email ? ` · ${p.email}` : ''}</p>
+              {(Number(p.commission_pct) > 0 || Number(p.commission_fixed) > 0) && (
+                <p className="text-emerald-400 text-xs mt-0.5">
+                  {Number(p.commission_pct) > 0
+                    ? `Comisión: ${p.commission_pct}%`
+                    : `Comisión fija: $${Number(p.commission_fixed).toLocaleString('es-CL')}`}
+                </p>
+              )}
             </div>
             <div className="flex gap-2 shrink-0">
               <button onClick={() => openEdit(p)} className="text-xs text-red-400 hover:underline">Editar</button>
@@ -149,6 +163,30 @@ export default function Professionals() {
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">Email</label>
                 <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className={inputClass} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Comisión %</label>
+                  <input
+                    type="number"
+                    value={form.commission_pct}
+                    onChange={e => setForm({ ...form, commission_pct: e.target.value })}
+                    min="0" max="100" step="0.1" placeholder="30"
+                    className={inputClass}
+                  />
+                  <p className="text-xs text-zinc-500 mt-0.5">% del precio del servicio</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Comisión fija (CLP)</label>
+                  <input
+                    type="number"
+                    value={form.commission_fixed}
+                    onChange={e => setForm({ ...form, commission_fixed: e.target.value })}
+                    min="0" step="100" placeholder="5000"
+                    className={inputClass}
+                  />
+                  <p className="text-xs text-zinc-500 mt-0.5">Monto fijo por consulta</p>
+                </div>
               </div>
               {error && <p className="text-red-400 text-xs">{error}</p>}
               <div className="flex gap-3 pt-2">

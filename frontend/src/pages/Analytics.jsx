@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = ['#ef4444', '#f97316', '#a855f7', '#10b981', '#f59e0b'];
 
@@ -78,17 +79,23 @@ function formatDay(iso) {
 }
 
 export default function Analytics() {
+  const { business } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('30');
+  const [commissions, setCommissions] = useState([]);
 
   const load = async (days) => {
     setLoading(true);
     const from = new Date(Date.now() - (Number(days) - 1) * 86400000).toISOString().slice(0, 10);
     const to = new Date().toISOString().slice(0, 10);
     try {
-      const { data: res } = await api.get('/analytics', { params: { from, to } });
-      setData(res);
+      const [analyticsRes, commissionsRes] = await Promise.all([
+        api.get('/analytics', { params: { from, to } }),
+        api.get('/analytics/commissions', { params: { from, to } }).catch(() => ({ data: [] })),
+      ]);
+      setData(analyticsRes.data);
+      setCommissions(commissionsRes.data);
     } finally {
       setLoading(false);
     }
@@ -225,6 +232,34 @@ export default function Analytics() {
               </div>
             )}
           </div>
+
+          {business?.plan === 'business' && commissions.length > 0 && (
+            <div className="mt-8 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-md shadow-black/20">
+              <h2 className="text-sm font-semibold text-zinc-300 mb-4">Comisiones por Profesional</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800">
+                      <th className="text-left text-zinc-400 pb-3 font-medium">Profesional</th>
+                      <th className="text-right text-zinc-400 pb-3 font-medium">Consultas</th>
+                      <th className="text-right text-zinc-400 pb-3 font-medium">Ingresos</th>
+                      <th className="text-right text-zinc-400 pb-3 font-medium">Comisión</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {commissions.map((c, idx) => (
+                      <tr key={c.id} className={`border-b border-zinc-800/50 ${idx % 2 === 0 ? '' : 'bg-zinc-800/20'}`}>
+                        <td className="py-3 text-white">{c.professional_name}</td>
+                        <td className="py-3 text-right text-zinc-300">{c.total_consultations}</td>
+                        <td className="py-3 text-right text-zinc-300">${Number(c.total_revenue).toLocaleString('es-CL')}</td>
+                        <td className="py-3 text-right text-emerald-400 font-semibold">${Number(c.total_commission).toLocaleString('es-CL')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

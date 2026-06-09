@@ -116,4 +116,45 @@ const getSummary = async (req, res) => {
   }
 };
 
-module.exports = { getSummary };
+const getCommissions = async (req, res) => {
+  const { from, to } = req.query;
+  const fromDate = from || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  const toDate = to || new Date().toISOString().slice(0, 10);
+
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        pr.id,
+        pr.name AS professional_name,
+        pr.commission_pct,
+        pr.commission_fixed,
+        COUNT(c.id) AS total_consultations,
+        COALESCE(SUM(s.price), 0) AS total_revenue,
+        COALESCE(
+          SUM(
+            CASE
+              WHEN pr.commission_pct > 0 THEN (s.price * pr.commission_pct / 100)
+              WHEN pr.commission_fixed > 0 THEN pr.commission_fixed
+              ELSE 0
+            END
+          ), 0
+        ) AS total_commission
+      FROM professionals pr
+      LEFT JOIN consultations c ON c.professional_id = pr.id
+        AND LEFT(c.created_at::text, 10) >= $2
+        AND LEFT(c.created_at::text, 10) <= $3
+      LEFT JOIN bookings b ON c.booking_id = b.id
+      LEFT JOIN services s ON b.service_id = s.id
+      WHERE pr.business_id = $1 AND pr.active = 1
+      GROUP BY pr.id, pr.name, pr.commission_pct, pr.commission_fixed
+      ORDER BY total_commission DESC
+    `, [req.business.id, fromDate, toDate]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('[analytics] getCommissions error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { getSummary, getCommissions };

@@ -28,8 +28,14 @@ const list = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  const { name, specialty, email } = req.body;
+  const { name, specialty, email, commission_pct, commission_fixed } = req.body;
   if (!name || !specialty) return res.status(400).json({ error: 'name y specialty son requeridos' });
+
+  const pct = parseFloat(commission_pct) || 0;
+  const fixed = parseFloat(commission_fixed) || 0;
+  if (pct < 0 || pct > 100) return res.status(400).json({ error: 'commission_pct debe estar entre 0 y 100' });
+  if (fixed < 0) return res.status(400).json({ error: 'commission_fixed no puede ser negativo' });
+
   // Check plan limit
   const PLAN_LIMITS = { basic: 1, pro: 5, business: Infinity };
   const limit = PLAN_LIMITS[req.business.plan] ?? 1;
@@ -48,8 +54,8 @@ const create = async (req, res) => {
   }
   try {
     const { rows } = await db.query(
-      'INSERT INTO professionals (business_id, name, specialty, email) VALUES ($1, $2, $3, $4) RETURNING *',
-      [req.business.id, name.trim(), specialty.trim(), email || null]
+      'INSERT INTO professionals (business_id, name, specialty, email, commission_pct, commission_fixed) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [req.business.id, name.trim(), specialty.trim(), email || null, pct, fixed]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -67,13 +73,25 @@ const update = async (req, res) => {
     const prof = existing[0];
     if (!prof) return res.status(404).json({ error: 'Profesional no encontrado' });
 
-    const { name, specialty, email } = req.body;
-    await db.query('UPDATE professionals SET name = $1, specialty = $2, email = $3 WHERE id = $4', [
-      name !== undefined ? name.trim() : prof.name,
-      specialty !== undefined ? specialty.trim() : prof.specialty,
-      email !== undefined ? email : prof.email,
-      prof.id,
-    ]);
+    const { name, specialty, email, commission_pct, commission_fixed } = req.body;
+
+    const pct = commission_pct !== undefined ? parseFloat(commission_pct) : prof.commission_pct;
+    const fixed = commission_fixed !== undefined ? parseFloat(commission_fixed) : prof.commission_fixed;
+
+    if (pct < 0 || pct > 100) return res.status(400).json({ error: 'commission_pct debe estar entre 0 y 100' });
+    if (fixed < 0) return res.status(400).json({ error: 'commission_fixed no puede ser negativo' });
+
+    await db.query(
+      'UPDATE professionals SET name = $1, specialty = $2, email = $3, commission_pct = $4, commission_fixed = $5 WHERE id = $6',
+      [
+        name !== undefined ? name.trim() : prof.name,
+        specialty !== undefined ? specialty.trim() : prof.specialty,
+        email !== undefined ? email : prof.email,
+        pct,
+        fixed,
+        prof.id,
+      ]
+    );
 
     const { rows: updated } = await db.query('SELECT * FROM professionals WHERE id = $1', [prof.id]);
     res.json(updated[0]);

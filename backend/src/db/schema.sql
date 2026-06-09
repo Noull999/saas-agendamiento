@@ -36,13 +36,15 @@ CREATE TABLE IF NOT EXISTS schedules (
 );
 
 CREATE TABLE IF NOT EXISTS professionals (
-  id          BIGSERIAL PRIMARY KEY,
-  business_id BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-  name        TEXT      NOT NULL,
-  specialty   TEXT      NOT NULL,
-  email       TEXT,
-  active      SMALLINT  NOT NULL DEFAULT 1,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id               BIGSERIAL PRIMARY KEY,
+  business_id      BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  name             TEXT      NOT NULL,
+  specialty        TEXT      NOT NULL,
+  email            TEXT,
+  active           SMALLINT  NOT NULL DEFAULT 1,
+  commission_pct   NUMERIC   NOT NULL DEFAULT 0,
+  commission_fixed NUMERIC   NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS patients (
@@ -122,6 +124,17 @@ CREATE TABLE IF NOT EXISTS message_templates (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(business_id, type, channel)
 );
+
+-- Migrations: add columns to existing tables (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='professionals' AND column_name='commission_pct') THEN
+    ALTER TABLE professionals ADD COLUMN commission_pct NUMERIC NOT NULL DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='professionals' AND column_name='commission_fixed') THEN
+    ALTER TABLE professionals ADD COLUMN commission_fixed NUMERIC NOT NULL DEFAULT 0;
+  END IF;
+END $$;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_bookings_business_datetime ON bookings(business_id, datetime_iso);
