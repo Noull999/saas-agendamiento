@@ -111,6 +111,7 @@ app.use('/api/professionals', require('./routes/professionals.routes'));
 app.use('/api/billing', require('./routes/billing.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));
 app.use('/api/payments', require('./routes/payments.routes'));
+app.use('/api/integrations', require('./routes/integrations.routes'));
 
 app.get('/health', async (req, res) => {
   try {

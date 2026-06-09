@@ -32,6 +32,8 @@ export default function Settings() {
   const [mpEnabled, setMpEnabled] = useState(false);
   const [mpTokenConfigured, setMpTokenConfigured] = useState(false);
   const [savingMp, setSavingMp] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -53,7 +55,52 @@ export default function Settings() {
       setMpTokenConfigured(mpSettingsRes.data.mp_token_configured || false);
       setLoading(false);
     }).catch(() => setLoading(false));
+
+    api.get('/integrations/google/status')
+      .then(({ data }) => setGoogleConnected(!!data.connected))
+      .catch(() => {});
+
+    // Mostrar feedback tras volver del flujo OAuth de Google
+    const params = new URLSearchParams(window.location.search);
+    const g = params.get('google');
+    if (g === 'connected') {
+      setGoogleConnected(true);
+      toast.success('Google Calendar conectado');
+    } else if (g === 'error') {
+      toast.error('No se pudo conectar Google Calendar');
+    }
+    if (g) {
+      params.delete('google');
+      const qs = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    }
   }, []);
+
+  const connectGoogleCalendar = async () => {
+    setGoogleLoading(true);
+    try {
+      const { data } = await api.get('/integrations/google/auth');
+      if (data.url) {
+        window.location.href = data.url; // Redirige al consentimiento de Google
+      } else {
+        toast.error('Google Calendar no está configurado');
+        setGoogleLoading(false);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error iniciando conexión con Google Calendar');
+      setGoogleLoading(false);
+    }
+  };
+
+  const disconnectGoogleCalendar = async () => {
+    try {
+      await api.post('/integrations/google/disconnect');
+      setGoogleConnected(false);
+      toast.success('Google Calendar desconectado');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error desconectando');
+    }
+  };
 
   const handleChange = (e) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -327,6 +374,38 @@ export default function Settings() {
           >
             {savingMp ? 'Guardando...' : 'Guardar configuración MP'}
           </button>
+        </div>
+      </div>
+
+      {/* Google Calendar */}
+      <div>
+        <h2 className="text-base font-semibold text-white mb-1">Google Calendar</h2>
+        <p className="text-zinc-500 text-xs mb-4">
+          Sincroniza automáticamente tus reservas con tu Google Calendar. Cuando se crea una reserva se agrega un evento, y al cancelarla se elimina.
+        </p>
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5">
+          {!googleConnected ? (
+            <button
+              onClick={connectGoogleCalendar}
+              disabled={googleLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-medium text-sm transition-colors"
+            >
+              {googleLoading ? 'Conectando...' : 'Conectar Google Calendar'}
+            </button>
+          ) : (
+            <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span>
+                <span className="text-white text-sm font-medium">Google Calendar conectado</span>
+              </div>
+              <button
+                onClick={disconnectGoogleCalendar}
+                className="text-red-400 hover:text-red-300 text-xs font-medium"
+              >
+                Desconectar
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -2,6 +2,7 @@ const db = require('../db/database');
 const { randomUUID } = require('node:crypto');
 const { notifyBookingConfirmation } = require('../services/notifications');
 const { sendBookingConfirmation, sendBusinessNotification } = require('../services/email');
+const { createCalendarEvent, deleteCalendarEvent } = require('../services/googleCalendar');
 
 const VALID_STATUSES = ['confirmed', 'cancelled', 'completed', 'no_show'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -179,11 +180,21 @@ const updateStatus = async (req, res) => {
   }
 
   try {
-    const { rows } = await db.query('SELECT id FROM bookings WHERE id = $1 AND business_id = $2', [id, req.business.id]);
+    const { rows } = await db.query('SELECT id, gcal_event_id FROM bookings WHERE id = $1 AND business_id = $2', [id, req.business.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
 
     await db.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id]);
     const { rows: updated } = await db.query('SELECT * FROM bookings WHERE id = $1', [id]);
+
+    // Si se cancela la reserva, borrar el evento del Google Calendar (no bloqueante)
+    if (status === 'cancelled' && rows[0].gcal_event_id) {
+      deleteCalendarEvent(req.business.id, rows[0].gcal_event_id)
+        .then((ok) => {
+          if (ok) db.query('UPDATE bookings SET gcal_event_id = NULL WHERE id = $1', [id]).catch(() => {});
+        })
+        .catch(err => console.warn('[bookings] Google Calendar delete error:', err.message));
+    }
+
     res.json(updated[0]);
   } catch (err) {
     console.error('[bookings] updateStatus error:', err.message);
@@ -194,8 +205,14 @@ const updateStatus = async (req, res) => {
 const remove = async (req, res) => {
   const { id } = req.params;
   try {
-    const { rows } = await db.query('SELECT id FROM bookings WHERE id = $1 AND business_id = $2', [id, req.business.id]);
+    const { rows } = await db.query('SELECT id, gcal_event_id FROM bookings WHERE id = $1 AND business_id = $2', [id, req.business.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
+
+    if (rows[0].gcal_event_id) {
+      deleteCalendarEvent(req.business.id, rows[0].gcal_event_id)
+        .catch(err => console.warn('[bookings] Google Calendar delete error:', err.message));
+    }
+
     await db.query('DELETE FROM bookings WHERE id = $1', [id]);
     res.json({ ok: true });
   } catch (err) {
@@ -271,7 +288,7 @@ const publicCreate = async (req, res) => {
     const booking = rows[0];
 
     const serviceRow = serviceId
-      ? (await db.query('SELECT name FROM services WHERE id = $1', [serviceId])).rows[0]
+      ? (await db.query('SELECT name, duration_min FROM services WHERE id = $1', [serviceId])).rows[0]
       : null;
 
     notifyBookingConfirmation({
@@ -285,6 +302,26 @@ const publicCreate = async (req, res) => {
       serviceName: serviceRow?.name || null, datetimeISO: datetime_iso,
       businessName: business.name, cancelToken, businessId: business.id,
     }).catch(err => console.error('[email] Error enviando confirmación:', err));
+
+    // Sincronizar con Google Calendar si el negocio lo tiene conectado (no bloqueante)
+    (async () => {
+      try {
+        const startDate = parseDatetimeSafe(datetime_iso);
+        const durationMin = serviceRow?.duration_min || 60;
+        const endISO = new Date(startDate.getTime() + durationMin * 60000).toISOString();
+        const eventId = await createCalendarEvent(business.id, {
+          summary: `${name}${serviceRow?.name ? ' — ' + serviceRow.name : ''}`,
+          description: `Reserva de ${name}${phone ? '\nTel: ' + phone : ''}${email ? '\nEmail: ' + email : ''}`,
+          startISO: startDate.toISOString(),
+          endISO,
+        });
+        if (eventId) {
+          await db.query('UPDATE bookings SET gcal_event_id = $1 WHERE id = $2', [eventId, booking.id]);
+        }
+      } catch (err) {
+        console.warn('[bookings] Google Calendar sync error:', err.message);
+      }
+    })();
 
     res.status(201).json({ ok: true, booking_id: booking.id, datetime_iso: booking.datetime_iso, cancel_token: cancelToken });
   } catch (err) {

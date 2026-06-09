@@ -160,3 +160,20 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS idx_payments_booking ON payments(booking_id);
 CREATE INDEX IF NOT EXISTS idx_payments_business ON payments(business_id, created_at);
+
+-- ── Integrations (Google Calendar, etc.) ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS integrations (
+  id          BIGSERIAL PRIMARY KEY,
+  business_id BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  type        TEXT      NOT NULL,  -- 'google_calendar'
+  access_token   TEXT,
+  refresh_token  TEXT,
+  token_expiry   TIMESTAMPTZ,
+  calendar_id    TEXT,              -- primary or specific calendar ID
+  active         BOOLEAN NOT NULL DEFAULT true,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(business_id, type)
+);
+
+-- Track the Google Calendar event ID created for each booking (for later deletion)
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS gcal_event_id TEXT;
