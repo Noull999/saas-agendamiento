@@ -397,23 +397,29 @@ export default function Bookings() {
       </div>
 
       {/* Public booking link banner */}
-      {business?.slug && (
-        <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm mb-6">
-          <span className="text-zinc-400 shrink-0">🔗 Tu link público:</span>
-          <span className="flex-1 text-zinc-300 font-mono text-xs truncate">
-            {window.location.origin}/book/{business.slug}
-          </span>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/book/${business.slug}`);
-              toast.success('Link copiado al portapapeles');
-            }}
-            className="shrink-0 text-xs text-red-400 hover:text-red-300 transition-colors bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg"
-          >
-            Copiar
-          </button>
-        </div>
-      )}
+      {business?.slug && (() => {
+        const bookingUrl = `${window.location.origin}/book/${business.slug.trim()}`;
+        return (
+          <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm mb-6">
+            <span className="text-zinc-400 shrink-0">🔗 Tu página:</span>
+            <span className="flex-1 text-zinc-300 font-mono text-xs truncate">{bookingUrl}</span>
+            <button
+              onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success('Link copiado'); }}
+              className="shrink-0 text-xs text-red-400 hover:text-red-300 transition-colors bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg"
+            >
+              Copiar
+            </button>
+            <a
+              href={bookingUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Ver →
+            </a>
+          </div>
+        );
+      })()}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
