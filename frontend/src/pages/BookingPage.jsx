@@ -21,6 +21,10 @@ function getDatesForNextDays(n = 30) {
 
 const STEP_LABELS = ['Servicio', 'Fecha', 'Hora', 'Datos'];
 
+const formatPrice = (p) => p && Number(p) > 0
+  ? `$${Number(p).toLocaleString('es-CL')}`
+  : 'Gratis';
+
 function ProgressBar({ step }) {
   return (
     <div className="flex items-center gap-2 mb-8">
@@ -239,22 +243,27 @@ export default function BookingPage() {
                 <h2 className="text-xl font-bold text-white mb-1">¿Qué servicio necesitas?</h2>
                 <p className="text-zinc-500 text-sm mb-6">Selecciona el servicio para tu cita</p>
                 {services.length === 0 && <p className="text-zinc-600 text-sm">Este negocio no tiene servicios configurados aún.</p>}
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-2">
                   {services.map((s) => (
                     <button
                       key={s.id}
+                      type="button"
                       onClick={() => { setSelectedService(s); setStep(2); }}
-                      className="w-full text-left p-4 bg-zinc-900 border-2 border-zinc-800 rounded-2xl hover:border-red-500 hover:bg-zinc-900/70 transition-all group"
+                      className={`flex items-center justify-between p-4 rounded-xl border text-left transition-all ${
+                        selectedService?.id === s.id
+                          ? 'border-red-500 bg-red-500/10 text-white'
+                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-zinc-600'
+                      }`}
                     >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-semibold text-white text-sm group-hover:text-red-400 transition-colors">{s.name}</p>
-                          {s.description && <p className="text-zinc-500 text-xs mt-0.5">{s.description}</p>}
-                        </div>
-                        <div className="text-right shrink-0 ml-4">
-                          <p className="text-sm text-zinc-400">{s.duration_min} min</p>
-                          {s.price && <p className="text-xs font-semibold text-red-400">${Number(s.price).toLocaleString('es-CL')}</p>}
-                        </div>
+                      <div>
+                        <div className="font-medium text-sm text-white">{s.name}</div>
+                        {s.description && <div className="text-xs text-zinc-500 mt-0.5">{s.description}</div>}
+                        {s.duration_min != null && (
+                          <div className="text-xs text-zinc-400 mt-0.5">{s.duration_min} min</div>
+                        )}
+                      </div>
+                      <div className="text-sm font-semibold text-red-400 shrink-0 ml-4">
+                        {formatPrice(s.price)}
                       </div>
                     </button>
                   ))}
