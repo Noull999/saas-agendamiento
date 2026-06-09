@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { withRetry } = require('../lib/retry');
 
 function createTransport() {
   const host = process.env.SMTP_HOST;
@@ -76,12 +77,16 @@ async function sendBookingConfirmation({
     </div>
   `;
 
-  await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to: clientEmail,
-    subject: `Confirmación de reserva — ${businessName}`,
-    html,
-  });
+  await withRetry(
+    () => transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: clientEmail,
+      subject: `Confirmación de reserva — ${businessName}`,
+      html,
+    }),
+    3,
+    1000
+  );
 }
 
 async function sendBusinessNotification({
@@ -124,12 +129,16 @@ async function sendBusinessNotification({
     </div>
   `;
 
-  await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to: businessEmail,
-    subject: `Nueva reserva — ${clientName} · ${businessName}`,
-    html,
-  });
+  await withRetry(
+    () => transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: businessEmail,
+      subject: `Nueva reserva — ${clientName} · ${businessName}`,
+      html,
+    }),
+    3,
+    1000
+  );
 }
 
 module.exports = { sendBookingConfirmation, sendBusinessNotification };

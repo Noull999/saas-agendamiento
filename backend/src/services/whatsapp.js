@@ -1,3 +1,5 @@
+const { withRetry } = require('../lib/retry');
+
 function formatDatetime(isoString) {
   const d = new Date(isoString);
   const date = d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -13,21 +15,25 @@ async function sendViaTwilio(toPhone, body) {
   if (!sid || !token || !from) return false;
 
   const credentials = Buffer.from(`${sid}:${token}`).toString('base64');
-  const resp = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        From: `whatsapp:${from}`,
-        To:   `whatsapp:${toPhone}`,
-        Body: body,
-      }).toString(),
-      signal: AbortSignal.timeout(8000),
-    }
+  const resp = await withRetry(
+    () => fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          From: `whatsapp:${from}`,
+          To:   `whatsapp:${toPhone}`,
+          Body: body,
+        }).toString(),
+        signal: AbortSignal.timeout(8000),
+      }
+    ),
+    3,
+    1500
   );
   if (!resp.ok) {
     const err = await resp.text();
@@ -45,12 +51,16 @@ async function sendViaBot(payload) {
   const headers = { 'Content-Type': 'application/json' };
   if (secret) headers['Authorization'] = `Bearer ${secret}`;
 
-  await fetch(`${botUrl}/notify`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(5000),
-  });
+  await withRetry(
+    () => fetch(`${botUrl}/notify`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
+    }),
+    3,
+    1500
+  );
   return true;
 }
 
