@@ -177,3 +177,16 @@ CREATE TABLE IF NOT EXISTS integrations (
 
 -- Track the Google Calendar event ID created for each booking (for later deletion)
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS gcal_event_id TEXT;
+
+-- ── API Keys ─────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS api_keys (
+  id          BIGSERIAL PRIMARY KEY,
+  business_id BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  name        TEXT      NOT NULL,
+  key_hash    TEXT      NOT NULL UNIQUE,
+  key_prefix  VARCHAR(8) NOT NULL,
+  last_used   TIMESTAMPTZ,
+  active      BOOLEAN   NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);

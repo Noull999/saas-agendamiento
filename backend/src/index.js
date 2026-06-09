@@ -49,7 +49,7 @@ const allowedOrigins = isDev
 app.use(cors({
   origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
   credentials: false,
 }));
 
@@ -112,6 +112,8 @@ app.use('/api/billing', require('./routes/billing.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));
 app.use('/api/payments', require('./routes/payments.routes'));
 app.use('/api/integrations', require('./routes/integrations.routes'));
+app.use('/api/v1', require('./routes/v1.routes'));
+app.use('/api/api-keys', require('./routes/apiKeys.routes'));
 
 app.get('/health', async (req, res) => {
   try {

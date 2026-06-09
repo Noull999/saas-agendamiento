@@ -34,6 +34,11 @@ export default function Settings() {
   const [savingMp, setSavingMp] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [apiKeys, setApiKeys] = useState([]);
+  const [showNewKeyForm, setShowNewKeyForm] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [createdKey, setCreatedKey] = useState(null);
+  const [creatingKey, setCreatingKey] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -58,6 +63,10 @@ export default function Settings() {
 
     api.get('/integrations/google/status')
       .then(({ data }) => setGoogleConnected(!!data.connected))
+      .catch(() => {});
+
+    api.get('/api-keys')
+      .then(({ data }) => setApiKeys(data))
       .catch(() => {});
 
     // Mostrar feedback tras volver del flujo OAuth de Google
@@ -169,6 +178,35 @@ export default function Settings() {
       toast.error(err.response?.data?.error || 'Error guardando configuración');
     } finally {
       setSavingMp(false);
+    }
+  };
+
+  const handleCreateKey = async () => {
+    if (!newKeyName.trim()) { toast.error('Nombre de la key requerido'); return; }
+    setCreatingKey(true);
+    try {
+      const { data } = await api.post('/api-keys', { name: newKeyName.trim() });
+      setCreatedKey(data);
+      setNewKeyName('');
+      setShowNewKeyForm(false);
+      // Refresh the list
+      const { data: keys } = await api.get('/api-keys');
+      setApiKeys(keys);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error creando API key');
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleRevokeKey = async (id) => {
+    if (!window.confirm('¿Revocar esta API key? Dejará de funcionar de inmediato.')) return;
+    try {
+      await api.delete(`/api-keys/${id}`);
+      setApiKeys(prev => prev.filter(k => k.id !== id));
+      toast.success('API key revocada');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error revocando API key');
     }
   };
 
@@ -405,6 +443,101 @@ export default function Settings() {
                 Desconectar
               </button>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* API Keys */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-base font-semibold text-white">API Keys</h2>
+          {!showNewKeyForm && (
+            <button
+              onClick={() => setShowNewKeyForm(true)}
+              className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+            >
+              + Nueva key
+            </button>
+          )}
+        </div>
+        <p className="text-zinc-500 text-xs mb-4">
+          Integra tu agendamiento con apps externas o CRMs usando la API.{' '}
+          Autentica cada request con el header <code className="text-zinc-400">X-API-Key</code>.
+        </p>
+
+        {createdKey && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4">
+            <p className="text-emerald-400 text-sm font-medium mb-2">API key creada exitosamente</p>
+            <p className="text-zinc-300 text-xs font-mono break-all mb-2 select-all">{createdKey.key}</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { navigator.clipboard.writeText(createdKey.key); toast.success('Copiado al portapapeles'); }}
+                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+              >
+                Copiar key
+              </button>
+              <button
+                onClick={() => setCreatedKey(null)}
+                className="text-xs text-zinc-500 hover:text-zinc-400"
+              >
+                Cerrar
+              </button>
+            </div>
+            <p className="text-zinc-500 text-xs mt-2">Esta es la única vez que puedes ver la key. Guárdala ahora.</p>
+          </div>
+        )}
+
+        {showNewKeyForm && (
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-4 mb-4 space-y-3">
+            <input
+              type="text"
+              value={newKeyName}
+              onChange={e => setNewKeyName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleCreateKey()}
+              placeholder="Ej: App móvil, Integración CRM"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleCreateKey}
+                disabled={creatingKey || !newKeyName.trim()}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                {creatingKey ? 'Creando...' : 'Crear key'}
+              </button>
+              <button
+                onClick={() => { setShowNewKeyForm(false); setNewKeyName(''); }}
+                className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {apiKeys.map(k => (
+            <div key={k.id} className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3">
+              <div>
+                <p className="text-white text-sm font-medium">{k.name}</p>
+                <p className="text-zinc-500 text-xs font-mono">{k.key_prefix}••••••••</p>
+                {k.last_used && (
+                  <p className="text-zinc-600 text-xs">
+                    Último uso: {new Date(k.last_used).toLocaleDateString('es-CL')}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => handleRevokeKey(k.id)}
+                className="text-red-400 hover:text-red-300 text-xs font-medium transition-colors ml-4 shrink-0"
+              >
+                Revocar
+              </button>
+            </div>
+          ))}
+          {apiKeys.length === 0 && !showNewKeyForm && (
+            <p className="text-zinc-500 text-sm text-center py-4">Sin API keys generadas</p>
           )}
         </div>
       </div>
