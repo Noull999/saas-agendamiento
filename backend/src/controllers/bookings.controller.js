@@ -423,7 +423,7 @@ const rescheduleBooking = async (req, res) => {
 
     const { rows } = await db.query(
       `UPDATE bookings
-       SET datetime_iso = $1, reminder_sent = 0
+       SET datetime_iso = $1, reminded = 0
        WHERE id = $2 AND business_id = $3
        RETURNING *`,
       [datetime_iso, id, req.business.id]
