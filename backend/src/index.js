@@ -115,6 +115,8 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 // Servir el frontend compilado (en producción)
 const path = require('path');
 const fs = require('fs');
+// __dirname = backend/src/ → subir 2 niveles llega a la raíz del repo → frontend/dist
+// En Railway el root dir es backend/, así que subir 2 niveles también funciona.
 const DIST = path.join(__dirname, '../../frontend/dist');
 if (fs.existsSync(DIST)) {
   app.use(express.static(DIST));
