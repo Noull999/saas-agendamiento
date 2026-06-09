@@ -41,7 +41,7 @@ if (!isDev) {
   });
 }
 
-// CORS: solo permite el frontend local en dev, o el dominio configurado en prod
+// CORS: en dev permite Vite dev server; en prod el frontend se sirve desde este mismo servidor
 const allowedOrigins = isDev
   ? ['http://localhost:5173', 'http://localhost:4173']
   : (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []);
@@ -111,6 +111,20 @@ app.use('/api/professionals', require('./routes/professionals.routes'));
 app.use('/api/billing', require('./routes/billing.routes'));
 
 app.get('/health', (_, res) => res.json({ ok: true }));
+
+// Servir el frontend compilado (en producción)
+const path = require('path');
+const fs = require('fs');
+const DIST = path.join(__dirname, '../../frontend/dist');
+if (fs.existsSync(DIST)) {
+  app.use(express.static(DIST));
+  // SPA fallback: cualquier ruta que no sea /api/* devuelve index.html
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Ruta no encontrada' });
+    res.sendFile(path.join(DIST, 'index.html'));
+  });
+  console.log('[API] Frontend estático habilitado desde', DIST);
+}
 
 app.get('/health/ready', async (_, res) => {
   try {

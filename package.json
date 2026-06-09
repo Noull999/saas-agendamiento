@@ -2,6 +2,8 @@
   "name": "saas-agendamiento",
   "version": "1.0.0",
   "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "node backend/src/index.js",
     "backend": "cd backend && npm run dev",
     "frontend": "cd frontend && npm run dev"
   }
