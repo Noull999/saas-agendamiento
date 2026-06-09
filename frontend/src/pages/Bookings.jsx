@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { isValidRut } from '../utils/rut';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { SkeletonTable } from '../components/Skeleton';
 
 const STATUS_LABELS = {
@@ -274,6 +275,7 @@ const EMPTY_PATIENT_FORM = { rut: '', name: '', phone: '', email: '' };
 export default function Bookings() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { business } = useAuth();
   const [bookings, setBookings]         = useState([]);
   const [loading, setLoading]           = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -393,6 +395,25 @@ export default function Bookings() {
           )}
         </div>
       </div>
+
+      {/* Public booking link banner */}
+      {business?.slug && (
+        <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm mb-6">
+          <span className="text-zinc-400 shrink-0">🔗 Tu link público:</span>
+          <span className="flex-1 text-zinc-300 font-mono text-xs truncate">
+            {window.location.origin}/book/{business.slug}
+          </span>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/book/${business.slug}`);
+              toast.success('Link copiado al portapapeles');
+            }}
+            className="shrink-0 text-xs text-red-400 hover:text-red-300 transition-colors bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg"
+          >
+            Copiar
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
