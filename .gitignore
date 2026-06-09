@@ -15,8 +15,8 @@ backend/data/*.db
 backend/data/*.db-shm
 backend/data/*.db-wal
 
-# Build output
-frontend/dist/
+# Build output — frontend/dist/ is committed so Railway doesn't need to build it
+# frontend/dist/
 
 # Logs
 *.log
