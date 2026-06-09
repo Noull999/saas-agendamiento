@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://saas-agendamiento-production.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }
