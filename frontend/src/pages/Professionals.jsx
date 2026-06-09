@@ -3,6 +3,7 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
+import { SkeletonCard } from '../components/Skeleton';
 
 const EMPTY_FORM = { name: '', specialty: '', email: '' };
 
@@ -97,7 +98,13 @@ export default function Professionals() {
         </button>
       </div>
 
-      {loading && <p className="text-zinc-500 text-sm">Cargando...</p>}
+      {loading && (
+        <div className="grid gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      )}
 
       {!loading && professionals.length === 0 && (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
@@ -106,8 +113,9 @@ export default function Professionals() {
         </div>
       )}
 
-      <div className="grid gap-3">
-        {professionals.map(p => (
+      {!loading && (
+        <div className="grid gap-3">
+          {professionals.map(p => (
           <div key={p.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 flex items-center gap-4 shadow-md shadow-black/20">
             <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-400 font-bold text-sm shrink-0">
               {p.name[0].toUpperCase()}
@@ -122,7 +130,8 @@ export default function Professionals() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">

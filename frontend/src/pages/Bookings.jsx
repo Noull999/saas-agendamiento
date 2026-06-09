@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { isValidRut } from '../utils/rut';
 import { useToast } from '../context/ToastContext';
+import { SkeletonTable } from '../components/Skeleton';
 
 const STATUS_LABELS = {
   confirmed: { label: 'Confirmada', color: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' },
@@ -317,7 +318,7 @@ export default function Bookings() {
         </div>
       </div>
 
-      {loading && <p className="text-zinc-500 text-sm">Cargando...</p>}
+      {loading && <SkeletonTable rows={6} />}
 
       {!loading && bookings.length === 0 && (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">

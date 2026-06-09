@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { isValidRut } from '../utils/rut';
+import { SkeletonTable } from '../components/Skeleton';
 
 const EMPTY_FORM = { rut: '', name: '', birth_date: '', phone: '', email: '', allergies: '', background: '' };
 
@@ -81,7 +82,7 @@ export default function Patients() {
         />
       </div>
 
-      {loading && <p className="text-zinc-500 text-sm">Cargando...</p>}
+      {loading && <SkeletonTable rows={5} />}
 
       {!loading && data.patients.length === 0 && (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">

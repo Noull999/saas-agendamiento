@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
+import { SkeletonCard } from '../components/Skeleton';
 
 const inputClass = 'mt-1.5 w-full bg-zinc-800 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
 
@@ -14,8 +15,13 @@ export default function Services() {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const load = async () => {
-    const { data } = await api.get('/services');
-    setServices(data);
+    setLoading(true);
+    try {
+      const { data } = await api.get('/services');
+      setServices(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -64,14 +70,22 @@ export default function Services() {
           <h1 className="text-2xl font-bold text-white">Servicios</h1>
           <p className="text-zinc-400 text-sm mt-0.5">Configura los servicios que ofreces</p>
         </div>
-        {services.length === 0 && (
+        {loading && (
+          <div className="grid grid-cols-1 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        )}
+        {!loading && services.length === 0 && (
           <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
             <p className="text-4xl mb-3">🛠</p>
             <p className="text-zinc-400 text-sm">Aún no tienes servicios. Agrega uno.</p>
           </div>
         )}
-        <div className="space-y-3">
-          {services.map((s) => (
+        {!loading && (
+          <div className="space-y-3">
+            {services.map((s) => (
             <div key={s.id} className={`bg-zinc-900 rounded-2xl border border-zinc-800 p-5 shadow-md shadow-black/20 transition-opacity ${!s.active ? 'opacity-50' : ''}`}>
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-400 font-bold text-sm shrink-0">
@@ -98,7 +112,8 @@ export default function Services() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 shadow-md shadow-black/20 h-fit">
