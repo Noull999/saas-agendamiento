@@ -132,3 +132,18 @@ CREATE INDEX IF NOT EXISTS idx_patients_business ON patients(business_id);
 CREATE INDEX IF NOT EXISTS idx_services_business_active ON services(business_id, active);
 CREATE INDEX IF NOT EXISTS idx_professionals_business ON professionals(business_id, active);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_business ON audit_logs(business_id, created_at);
+
+-- ── Mercado Pago payments ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS payments (
+  id               BIGSERIAL PRIMARY KEY,
+  business_id      BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  booking_id       BIGINT    REFERENCES bookings(id),
+  mp_preference_id TEXT,
+  mp_payment_id    TEXT,
+  amount           NUMERIC   NOT NULL,
+  currency         TEXT      NOT NULL DEFAULT 'CLP',
+  status           TEXT      NOT NULL DEFAULT 'pending', -- pending | approved | rejected | cancelled
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_payments_booking ON payments(booking_id);
+CREATE INDEX IF NOT EXISTS idx_payments_business ON payments(business_id, created_at);

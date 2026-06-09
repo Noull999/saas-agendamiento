@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { getVertical } from '../config/verticals.config';
 import { isValidRut } from '../utils/rut';
@@ -52,6 +52,7 @@ function ProgressBar({ step }) {
 
 export default function BookingPage() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
   const toast = useToast();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
@@ -65,12 +66,22 @@ export default function BookingPage() {
   const [form, setForm] = useState({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [cancelToken, setCancelToken] = useState(null);
+  const [createdBooking, setCreatedBooking] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     axios.get(`/api/public/${slug}`)
       .then(({ data }) => setProfile(data))
       .catch(() => setError('Negocio no encontrado'));
   }, [slug]);
+
+  // Show a banner when returning from Mercado Pago
+  useEffect(() => {
+    const paymentResult = searchParams.get('payment');
+    if (paymentResult === 'success') toast.success('¡Pago recibido! Tu reserva está confirmada.');
+    else if (paymentResult === 'failure') toast.error('El pago fue rechazado. Puedes intentarlo de nuevo o pagar en la consulta.');
+    else if (paymentResult === 'pending') toast.info?.('Pago pendiente de acreditación. Te notificaremos cuando se confirme.');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!selectedDate || !selectedService) return;
@@ -124,12 +135,43 @@ export default function BookingPage() {
         notes: form.notes || undefined,
       });
       if (data.cancel_token) setCancelToken(data.cancel_token);
-      setStep(5);
+      setCreatedBooking(data);
+
+      // If the business has MP enabled and the service has a price, offer payment
+      const hasMp = profile?.business?.mp_enabled;
+      const hasPrice = selectedService?.price && Number(selectedService.price) > 0;
+      if (hasMp && hasPrice) {
+        setStep(5); // payment choice step
+      } else {
+        setStep(6); // confirmation (no payment)
+      }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al agendar');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePaymentNow = async () => {
+    if (!createdBooking) return;
+    setPaymentLoading(true);
+    try {
+      const { data } = await axios.post('/api/payments/preference', {
+        booking_id: createdBooking.id,
+        service_id: selectedService?.id,
+        amount: selectedService?.price,
+        client_email: form.client_email || undefined,
+        client_name: form.client_name,
+      });
+      window.location.href = data.init_point;
+    } catch (err) {
+      toast.error('Error iniciando pago: ' + (err.response?.data?.error || err.message));
+      setPaymentLoading(false);
+    }
+  };
+
+  const handlePaymentLater = () => {
+    setStep(6); // go to confirmation screen
   };
 
   const inputClass = 'mt-1.5 w-full bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
@@ -188,8 +230,50 @@ export default function BookingPage() {
       {/* Right panel */}
       <div className="flex-1 bg-black p-8 lg:p-12 overflow-auto">
 
-        {/* Step 5: Confirmación */}
+        {/* Step 5: Opción de pago */}
         {step === 5 && (
+          <div className="max-w-md mx-auto pt-8">
+            <div className="w-16 h-16 bg-blue-500/20 border border-blue-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">💳</div>
+            <h2 className="text-2xl font-bold text-white mb-2 text-center">¿Cómo deseas pagar?</h2>
+            <p className="text-zinc-400 mb-8 text-center text-sm">Tu reserva está confirmada. Puedes pagar ahora o al momento de la consulta.</p>
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-sm space-y-2 mb-8">
+              {selectedService && <div className="flex justify-between"><span className="text-zinc-500">Servicio</span><span className="font-medium text-white">{selectedService.name}</span></div>}
+              {selectedDate && <div className="flex justify-between"><span className="text-zinc-500">Fecha</span><span className="font-medium capitalize text-white">{DAYS[selectedDate.getDay()]} {selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]}</span></div>}
+              {selectedSlot && <div className="flex justify-between"><span className="text-zinc-500">Hora</span><span className="font-medium text-white">{selectedSlot} hrs</span></div>}
+              {selectedService?.price && (
+                <div className="flex justify-between border-t border-zinc-800 pt-2 mt-2">
+                  <span className="text-zinc-500">Total</span>
+                  <span className="font-bold text-white">${Number(selectedService.price).toLocaleString('es-CL')}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handlePaymentNow}
+                disabled={paymentLoading}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
+              >
+                {paymentLoading ? (
+                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Redirigiendo...</span>
+                ) : (
+                  <>💳 Pagar ahora — ${Number(selectedService?.price || 0).toLocaleString('es-CL')}</>
+                )}
+              </button>
+              <button
+                onClick={handlePaymentLater}
+                disabled={paymentLoading}
+                className="w-full py-3 bg-zinc-900 border border-zinc-700 text-zinc-300 hover:bg-zinc-800 rounded-xl font-medium transition-colors text-sm"
+              >
+                📍 Pagar en la consulta
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Confirmación */}
+        {step === 6 && (
           <div className="max-w-md mx-auto text-center pt-8">
             <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">✅</div>
             <h2 className="text-2xl font-bold text-white mb-2">¡Reserva confirmada!</h2>
@@ -225,7 +309,7 @@ export default function BookingPage() {
             </div>
 
             <button
-              onClick={() => { setStep(1); setSelectedService(null); setSelectedDate(null); setSelectedSlot(null); setCancelToken(null); setForm({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' }); }}
+              onClick={() => { setStep(1); setSelectedService(null); setSelectedDate(null); setSelectedSlot(null); setCancelToken(null); setCreatedBooking(null); setForm({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' }); }}
               className="text-sm text-red-400 hover:text-red-300 hover:underline transition-colors"
             >
               Agendar otra hora
@@ -233,7 +317,7 @@ export default function BookingPage() {
           </div>
         )}
 
-        {step < 5 && (
+        {step < 5 && step >= 1 && (
           <div className="max-w-md mx-auto">
             <ProgressBar step={step} />
 

@@ -35,7 +35,17 @@ router.get('/:slug', async (req, res) => {
 
     const schedules = scheduleRows.map(r => ({ dow: r.dow, slots: safeParseSlots(r.slots) }));
 
-    res.json({ business, services, schedules });
+    // Check if business has Mercado Pago enabled
+    let mpEnabled = false;
+    try {
+      const { rows: mpRows } = await db.query(
+        "SELECT value FROM business_settings WHERE business_id = $1 AND key = 'mp_enabled' LIMIT 1",
+        [business.id]
+      );
+      mpEnabled = mpRows[0]?.value === '1';
+    } catch { /* business_settings table may not exist yet */ }
+
+    res.json({ business: { ...business, mp_enabled: mpEnabled }, services, schedules });
   } catch (err) {
     console.error('[public] profile error:', err.message);
     res.status(500).json({ error: 'Error interno del servidor' });

@@ -28,13 +28,18 @@ export default function Settings() {
   const [upgrading, setUpgrading] = useState(null);
   const [templates, setTemplates] = useState(null);
   const [savingTemplate, setSavingTemplate] = useState(null);
+  const [mpToken, setMpToken] = useState('');
+  const [mpEnabled, setMpEnabled] = useState(false);
+  const [mpTokenConfigured, setMpTokenConfigured] = useState(false);
+  const [savingMp, setSavingMp] = useState(false);
 
   useEffect(() => {
     Promise.all([
       api.get('/settings'),
       api.get('/billing/plans'),
       api.get('/settings/templates'),
-    ]).then(([settingsRes, plansRes, templatesRes]) => {
+      api.get('/payments/settings').catch(() => ({ data: {} })),
+    ]).then(([settingsRes, plansRes, templatesRes, mpSettingsRes]) => {
       const data = settingsRes.data;
       setForm({
         name: data.name || '',
@@ -44,6 +49,8 @@ export default function Settings() {
       });
       setPlans(plansRes.data.plans || []);
       setTemplates(templatesRes.data);
+      setMpEnabled(mpSettingsRes.data.mp_enabled || false);
+      setMpTokenConfigured(mpSettingsRes.data.mp_token_configured || false);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -98,6 +105,23 @@ export default function Settings() {
       toast.error(err.response?.data?.error || 'Error guardando template');
     } finally {
       setSavingTemplate(null);
+    }
+  };
+
+  const saveMpSettings = async () => {
+    setSavingMp(true);
+    try {
+      await api.post('/payments/settings', {
+        mp_access_token: mpToken || undefined,
+        mp_enabled: mpEnabled,
+      });
+      if (mpToken) setMpTokenConfigured(true);
+      setMpToken(''); // clear after save — don't keep token in state
+      toast.success('Configuración de Mercado Pago guardada');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error guardando configuración');
+    } finally {
+      setSavingMp(false);
     }
   };
 
@@ -247,6 +271,64 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* Mercado Pago */}
+      <div>
+        <h2 className="text-base font-semibold text-white mb-1">Mercado Pago</h2>
+        <p className="text-zinc-500 text-xs mb-4">
+          Permite que tus clientes paguen al momento de reservar. Requiere una cuenta de Mercado Pago.{' '}
+          <a
+            href="https://www.mercadopago.cl/developers/es/docs/getting-started/create-account"
+            target="_blank"
+            rel="noreferrer"
+            className="text-red-400 hover:text-red-300 underline"
+          >
+            Cómo obtener tu Access Token
+          </a>
+        </p>
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 space-y-5">
+          {mpTokenConfigured && (
+            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2">
+              <span className="text-emerald-400 text-sm">✓ Access Token configurado</span>
+              <span className="text-zinc-500 text-xs ml-auto">Para actualizar, ingresa uno nuevo</span>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              Access Token {mpTokenConfigured ? '(dejar vacío para mantener el actual)' : ''}
+            </label>
+            <input
+              type="password"
+              value={mpToken}
+              onChange={e => setMpToken(e.target.value)}
+              placeholder={mpTokenConfigured ? '••••••••••••••••••••••••' : 'APP_USR-... o TEST-...'}
+              className={inputClass}
+            />
+            <p className="text-xs text-zinc-500 mt-1">
+              Usa tokens que empiezan con <code className="text-zinc-400">TEST-</code> para sandbox y <code className="text-zinc-400">APP_USR-</code> para producción.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="mpEnabled"
+              checked={mpEnabled}
+              onChange={e => setMpEnabled(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-700 accent-red-500"
+            />
+            <label htmlFor="mpEnabled" className="text-sm text-white cursor-pointer">
+              Habilitar opción de pago previo al reservar
+            </label>
+          </div>
+          <button
+            onClick={saveMpSettings}
+            disabled={savingMp}
+            className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-medium text-sm transition-colors"
+          >
+            {savingMp ? 'Guardando...' : 'Guardar configuración MP'}
+          </button>
+        </div>
+      </div>
 
       {/* Profile form */}
       <div>
