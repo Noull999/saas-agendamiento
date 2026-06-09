@@ -134,16 +134,31 @@ const createPreference = async (req, res) => {
 const webhook = async (req, res) => {
   const { type, data } = req.body || {};
 
-  if (type !== 'payment') return res.json({ ok: true });
+  if (type !== 'payment' || !data?.id) return res.json({ ok: true });
 
   try {
     // NOTE: In production you should verify the X-Signature header with
     // MERCADO_PAGO_WEBHOOK_SECRET before trusting this payload.
+    // MP only sends the payment id — fetch the payment to get status and
+    // external_reference (our booking_id).
+    const { Payment } = require('mercadopago');
+    const token = process.env.MERCADO_PAGO_ACCESS_TOKEN || await (async () => {
+      const { rows } = await db.query(
+        "SELECT value FROM business_settings WHERE key = 'mp_access_token' LIMIT 1"
+      );
+      return rows[0]?.value || null;
+    })();
+    if (!token) return res.json({ ok: true });
+
+    const payment = await new Payment(getMP(token)).get({ id: data.id });
+    const bookingId = payment.external_reference ? parseInt(payment.external_reference, 10) : null;
+    if (!bookingId) return res.json({ ok: true });
+
     await db.query(
       `UPDATE payments
-          SET status = 'approved', mp_payment_id = $1
-        WHERE mp_preference_id = $2`,
-      [String(data?.id || ''), String(data?.preference_id || '')]
+          SET status = $1, mp_payment_id = $2
+        WHERE booking_id = $3`,
+      [payment.status || 'pending', String(data.id), bookingId]
     );
     return res.json({ ok: true });
   } catch (err) {
