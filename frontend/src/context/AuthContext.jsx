@@ -28,6 +28,17 @@ export function AuthProvider({ children }) {
       .finally(() => setAuthChecked(true));
   }, []);
 
+  // Listen for logout event triggered by API interceptor (401 response)
+  useEffect(() => {
+    const handleLogout = () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('business');
+      setBusiness(null);
+    };
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, []);
+
   const login = async (owner_email, password) => {
     const { data } = await api.post('/auth/login', { owner_email, password });
     localStorage.setItem('token', data.token);

@@ -14,7 +14,11 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('business');
-      window.location.href = '/';
+      window.dispatchEvent(new Event('auth:logout'));
+      // Redirect after a brief delay to allow event handlers to process
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     }
     return Promise.reject(err);
   }
