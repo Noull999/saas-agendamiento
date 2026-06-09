@@ -16,6 +16,13 @@ function clipString(v, max) {
   return t.slice(0, max);
 }
 
+function parseDatetimeSafe(iso) {
+  // If already has explicit TZ (Z, +, or - after the time), parse directly
+  if (/T.*[Z+\-]/.test(iso)) return new Date(iso);
+  // No TZ: assume Chile Standard Time (UTC-4)
+  return new Date(iso + '-04:00');
+}
+
 const list = async (req, res) => {
   const { date, status, from } = req.query;
   const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -193,14 +200,6 @@ const remove = async (req, res) => {
 
 const publicCreate = async (req, res) => {
   const { slug } = req.params;
-
-  // Helper to parse datetime safely with Chile timezone assumption
-  function parseDatetimeSafe(iso) {
-    // If already has explicit TZ (Z, +, or - after the time), parse directly
-    if (/T.*[Z+\-]/.test(iso)) return new Date(iso);
-    // No TZ: assume Chile Standard Time (UTC-4)
-    return new Date(iso + '-04:00');
-  }
 
   const name = clipString(req.body.client_name, 100);
   if (!name) return res.status(400).json({ error: 'client_name es requerido' });
