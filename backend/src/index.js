@@ -109,6 +109,7 @@ app.use('/api/prescriptions', require('./routes/prescriptions.routes'));
 app.use('/api/professionals', require('./routes/professionals.routes'));
 // billing incluye el webhook de Stripe (raw body) y el checkout protegido
 app.use('/api/billing', require('./routes/billing.routes'));
+app.use('/api/reports', require('./routes/reports.routes'));
 
 app.get('/health', async (req, res) => {
   try {

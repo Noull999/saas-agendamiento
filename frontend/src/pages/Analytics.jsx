@@ -109,14 +109,26 @@ export default function Analytics() {
           <h1 className="text-2xl font-bold text-white">Analytics</h1>
           <p className="text-zinc-400 text-sm mt-0.5">Estadísticas de tu negocio</p>
         </div>
-        <select
-          value={range} onChange={(e) => setRange(e.target.value)}
-          className="bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-2 text-sm shadow-md shadow-black/20 focus:outline-none focus:ring-2 focus:ring-red-500"
-        >
-          <option value="7">Últimos 7 días</option>
-          <option value="30">Últimos 30 días</option>
-          <option value="90">Últimos 90 días</option>
-        </select>
+        <div className="flex items-center gap-3">
+          <select
+            value={range} onChange={(e) => setRange(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-2 text-sm shadow-md shadow-black/20 focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="7">Últimos 7 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+          <button
+            onClick={() => {
+              const from = new Date(Date.now() - (Number(range) - 1) * 86400000).toISOString().slice(0, 10);
+              const to = new Date().toISOString().slice(0, 10);
+              window.open(`/api/reports/bookings?from=${from}&to=${to}`, '_blank');
+            }}
+            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 px-4 py-2 rounded-xl text-sm transition-colors shadow-md shadow-black/20"
+          >
+            📄 Descargar PDF
+          </button>
+        </div>
       </div>
 
       {loading && <p className="text-zinc-500 text-sm">Cargando...</p>}
