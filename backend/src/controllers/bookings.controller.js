@@ -55,6 +55,10 @@ const list = async (req, res) => {
     where += ` AND (b.client_name ILIKE $${n1} OR b.client_phone ILIKE $${n2} OR s.name ILIKE $${n3})`;
     params.push(s, s, s);
   }
+  if (req.query.location_id) {
+    where += ` AND b.location_id = $${i++}`;
+    params.push(req.query.location_id);
+  }
 
   try {
     const { rows: totalRows } = await db.query(`SELECT COUNT(*) as n FROM bookings b LEFT JOIN services s ON b.service_id = s.id ${where}`, params);
@@ -256,9 +260,27 @@ const publicCreate = async (req, res) => {
 
   const client = await db.connect();
   try {
+    // Resolve slug: try business slug first, then location slug_suffix
+    let business = null;
+    let locationId = null;
+
     const { rows: bizRows } = await client.query('SELECT * FROM businesses WHERE slug = $1', [slug]);
-    if (!bizRows[0]) return res.status(404).json({ error: 'Negocio no encontrado' });
-    const business = bizRows[0];
+    if (bizRows[0]) {
+      business = bizRows[0];
+    } else {
+      const { rows: locRows } = await client.query(
+        `SELECT b.*, l.id AS location_id
+           FROM locations l
+           JOIN businesses b ON l.business_id = b.id
+          WHERE l.slug_suffix = $1 AND l.active = true`,
+        [slug]
+      );
+      if (!locRows[0]) return res.status(404).json({ error: 'Negocio no encontrado' });
+      locationId = locRows[0].location_id;
+      // Strip the synthetic location_id column from the business object
+      const { location_id: _loc, ...biz } = locRows[0];
+      business = biz;
+    }
 
     if (serviceId) {
       const { rows: svcRows } = await client.query('SELECT id FROM services WHERE id = $1 AND business_id = $2', [serviceId, business.id]);
@@ -279,10 +301,10 @@ const publicCreate = async (req, res) => {
     }
 
     const { rows } = await client.query(`
-      INSERT INTO bookings (business_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut, cancel_token)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO bookings (business_id, location_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut, cancel_token)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
-    `, [business.id, serviceId || null, name, email, phone, datetime_iso, notes, source, rut, cancelToken]);
+    `, [business.id, locationId, serviceId || null, name, email, phone, datetime_iso, notes, source, rut, cancelToken]);
 
     await client.query('COMMIT');
     const booking = rows[0];

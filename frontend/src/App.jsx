@@ -28,6 +28,7 @@ const Consultations  = lazy(() => import('./pages/Consultations'));
 const Professionals = lazy(() => import('./pages/Professionals'));
 const Clients       = lazy(() => import('./pages/Clients'));
 const Onboarding    = lazy(() => import('./pages/Onboarding'));
+const Locations     = lazy(() => import('./pages/Locations'));
 
 // Páginas legales (públicas)
 const Terms   = lazy(() => import('./pages/legal/Terms'));
@@ -87,7 +88,8 @@ function App() {
             <Route path="/dashboard/pacientes/:id"   element={<Protected><Layout><PatientDetail /></Layout></Protected>} />
             <Route path="/dashboard/consultas"       element={<Protected><Layout><Consultations /></Layout></Protected>} />
             <Route path="/dashboard/profesionales"   element={<Protected><Layout><Professionals /></Layout></Protected>} />
-            <Route path="/dashboard/clientes"        element={<Protected><Layout><Clients /></Layout></Protected>} />
+            <Route path="/dashboard/clientes"         element={<Protected><Layout><Clients /></Layout></Protected>} />
+            <Route path="/dashboard/sucursales"      element={<Protected><Layout><Locations /></Layout></Protected>} />
 
             <Route path="/book/:slug"            element={<BookingPage />} />
             <Route path="/book/:slug/mis-citas" element={<MyBookingsPage />} />

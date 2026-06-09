@@ -178,6 +178,52 @@ CREATE TABLE IF NOT EXISTS integrations (
 -- Track the Google Calendar event ID created for each booking (for later deletion)
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS gcal_event_id TEXT;
 
+-- ── Locations (multi-branch) ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS locations (
+  id          BIGSERIAL PRIMARY KEY,
+  business_id BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  name        TEXT      NOT NULL,
+  address     TEXT,
+  phone       TEXT,
+  slug_suffix TEXT      UNIQUE,
+  active      BOOLEAN   NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_locations_business ON locations(business_id);
+
+-- Idempotent migrations: add location_id to existing tables
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='professionals' AND column_name='location_id') THEN
+    ALTER TABLE professionals ADD COLUMN location_id BIGINT REFERENCES locations(id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='location_id') THEN
+    ALTER TABLE schedules ADD COLUMN location_id BIGINT REFERENCES locations(id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='location_id') THEN
+    ALTER TABLE bookings ADD COLUMN location_id BIGINT REFERENCES locations(id);
+  END IF;
+  -- The original UNIQUE(business_id, dow) on schedules doesn't accommodate per-location rows.
+  -- Drop it (if exists) and replace with a composite that covers location_id (NULL-safe).
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_name = 'schedules'
+      AND constraint_type = 'UNIQUE'
+      AND constraint_name = 'schedules_business_id_dow_key'
+  ) THEN
+    ALTER TABLE schedules DROP CONSTRAINT schedules_business_id_dow_key;
+  END IF;
+END $$;
+
+-- Unique schedule per (business, dow, location) — NULL location = main business schedule
+CREATE UNIQUE INDEX IF NOT EXISTS idx_schedules_business_dow_location
+  ON schedules(business_id, dow, location_id)
+  WHERE location_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_schedules_business_dow_no_location
+  ON schedules(business_id, dow)
+  WHERE location_id IS NULL;
+
 -- ── API Keys ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS api_keys (
   id          BIGSERIAL PRIMARY KEY,
