@@ -24,7 +24,7 @@ function parseDatetimeSafe(iso) {
 }
 
 const list = async (req, res) => {
-  const { date, status, from } = req.query;
+  const { date, status, from, search } = req.query;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
   const offset = (page - 1) * limit;
@@ -48,9 +48,15 @@ const list = async (req, res) => {
     where += ` AND b.status = $${i++}`;
     params.push(status);
   }
+  if (search && search.trim()) {
+    const s = `%${search.trim()}%`;
+    const n1 = i++, n2 = i++, n3 = i++;
+    where += ` AND (b.client_name ILIKE $${n1} OR b.client_phone ILIKE $${n2} OR s.name ILIKE $${n3})`;
+    params.push(s, s, s);
+  }
 
   try {
-    const { rows: totalRows } = await db.query(`SELECT COUNT(*) as n FROM bookings b ${where}`, params);
+    const { rows: totalRows } = await db.query(`SELECT COUNT(*) as n FROM bookings b LEFT JOIN services s ON b.service_id = s.id ${where}`, params);
     const total = parseInt(totalRows[0].n);
 
     const { rows: bookings } = await db.query(`

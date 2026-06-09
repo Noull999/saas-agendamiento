@@ -1,6 +1,7 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getVertical, meetsMinPlan } from '../config/verticals.config';
+import GlobalSearch from './GlobalSearch';
 
 export default function Layout({ children }) {
   const { business, logout } = useAuth();
@@ -92,6 +93,8 @@ export default function Layout({ children }) {
       <main className="flex-1 p-8 overflow-auto bg-zinc-950">
         {children}
       </main>
+
+      <GlobalSearch />
     </div>
   );
 }
