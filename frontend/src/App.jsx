@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Carga inmediata: páginas pequeñas necesarias antes del primer render
 import Login          from './pages/Login';
@@ -60,11 +61,12 @@ function PublicOnly({ children }) {
 
 function App() {
   return (
-    <ToastProvider>
-    <AuthProvider>
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
             <Route path="/"                 element={<LandingPage />} />
             <Route path="/login"            element={<PublicOnly><Login /></PublicOnly>} />
             <Route path="/register"         element={<PublicOnly><Register /></PublicOnly>} />
@@ -91,11 +93,12 @@ function App() {
             <Route path="/book/:slug/mis-citas" element={<MyBookingsPage />} />
             <Route path="/cancel/:token"        element={<CancelBookingPage />} />
             <Route path="*"                     element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </AuthProvider>
-    </ToastProvider>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 
