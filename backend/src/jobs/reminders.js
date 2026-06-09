@@ -12,7 +12,7 @@ async function sendReminders() {
   let bookings;
   try {
     const { rows } = await db.query(`
-      SELECT b.id, b.client_name, b.client_phone, b.client_email,
+      SELECT b.id, b.business_id, b.client_name, b.client_phone, b.client_email,
              b.datetime_iso, s.name AS service_name, bs.name AS business_name
       FROM   bookings b
       LEFT JOIN services    s  ON b.service_id   = s.id
@@ -48,6 +48,7 @@ async function sendReminders() {
         serviceName:  booking.service_name,
         datetimeISO:  booking.datetime_iso,
         businessName: booking.business_name,
+        businessId:   booking.business_id,
       });
       await db.query('UPDATE bookings SET reminded = 1 WHERE id = $1', [booking.id]);
       console.log(`[reminders] Recordatorio enviado: booking #${booking.id} (${booking.client_name})`);

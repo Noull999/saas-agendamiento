@@ -26,12 +26,15 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [plans, setPlans] = useState([]);
   const [upgrading, setUpgrading] = useState(null);
+  const [templates, setTemplates] = useState(null);
+  const [savingTemplate, setSavingTemplate] = useState(null);
 
   useEffect(() => {
     Promise.all([
       api.get('/settings'),
       api.get('/billing/plans'),
-    ]).then(([settingsRes, plansRes]) => {
+      api.get('/settings/templates'),
+    ]).then(([settingsRes, plansRes, templatesRes]) => {
       const data = settingsRes.data;
       setForm({
         name: data.name || '',
@@ -40,8 +43,9 @@ export default function Settings() {
         vertical: data.vertical || 'salud',
       });
       setPlans(plansRes.data.plans || []);
+      setTemplates(templatesRes.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const handleChange = (e) => {
@@ -74,6 +78,26 @@ export default function Settings() {
       toast.error(err.response?.data?.error || 'Error al iniciar el pago');
     } finally {
       setUpgrading(null);
+    }
+  };
+
+  const saveTemplate = async (type, channel, content) => {
+    const key = `${type}:${channel}`;
+    setSavingTemplate(key);
+    try {
+      await api.put('/settings/templates', { type, channel, content });
+      toast.success('Template guardado');
+      setTemplates(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          [channel]: { content, customized: true },
+        },
+      }));
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error guardando template');
+    } finally {
+      setSavingTemplate(null);
     }
   };
 
@@ -158,6 +182,71 @@ export default function Settings() {
           })}
         </div>
       </div>
+
+      {/* Message Templates */}
+      {templates && (
+        <div>
+          <h2 className="text-base font-semibold text-white mb-1">Templates de mensajes automáticos</h2>
+          <p className="text-zinc-500 text-xs mb-4">Personaliza los mensajes que reciben tus clientes. Guarda con Tab o al salir del campo.</p>
+          <div className="space-y-6">
+            {[
+              { key: 'booking_confirmation', label: 'Confirmación de reserva' },
+              { key: 'reminder', label: 'Recordatorio 24h antes' },
+              { key: 'cancellation', label: 'Cancelación de reserva' },
+            ].map(({ key, label }) => (
+              templates[key] && (
+                <div key={key} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 space-y-4">
+                  <h3 className="text-white font-medium text-sm">{label}</h3>
+                  {[
+                    { channel: 'whatsapp', label: 'Mensaje WhatsApp', multiline: true },
+                    { channel: 'email_subject', label: 'Asunto del email', multiline: false },
+                    { channel: 'email_body', label: 'Cuerpo del email (HTML)', multiline: true },
+                  ].map(({ channel, label: chLabel, multiline }) => {
+                    const saving = savingTemplate === `${key}:${channel}`;
+                    return (
+                      <div key={channel}>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-medium text-zinc-400">{chLabel}</label>
+                          {templates[key][channel]?.customized && (
+                            <span className="text-xs text-emerald-500">Personalizado</span>
+                          )}
+                          {saving && <span className="text-xs text-zinc-500">Guardando...</span>}
+                        </div>
+                        {multiline ? (
+                          <textarea
+                            key={`${key}-${channel}-${templates[key][channel]?.content?.slice(0, 10)}`}
+                            defaultValue={templates[key][channel]?.content || ''}
+                            onBlur={e => {
+                              const val = e.target.value;
+                              if (val !== templates[key][channel]?.content) saveTemplate(key, channel, val);
+                            }}
+                            rows={channel === 'email_body' ? 5 : 4}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono resize-y"
+                          />
+                        ) : (
+                          <input
+                            key={`${key}-${channel}-${templates[key][channel]?.content?.slice(0, 10)}`}
+                            type="text"
+                            defaultValue={templates[key][channel]?.content || ''}
+                            onBlur={e => {
+                              const val = e.target.value;
+                              if (val !== templates[key][channel]?.content) saveTemplate(key, channel, val);
+                            }}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                  <p className="text-xs text-zinc-600">
+                    Variables disponibles: <span className="font-mono text-zinc-500">{'{{clientName}} {{businessName}} {{serviceName}} {{date}} {{time}} {{cancelLink}}'}</span>
+                  </p>
+                </div>
+              )
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Profile form */}
       <div>

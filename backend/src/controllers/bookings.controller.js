@@ -277,13 +277,13 @@ const publicCreate = async (req, res) => {
     notifyBooking({
       clientName: name, clientPhone: phone, clientEmail: email,
       serviceName: serviceRow?.name || null, datetimeISO: datetime_iso,
-      businessName: business.name,
+      businessName: business.name, businessId: business.id, cancelToken,
     }).catch(err => console.error('[whatsapp] Error enviando notificación:', err));
 
     sendBookingConfirmation({
       clientName: name, clientEmail: email,
       serviceName: serviceRow?.name || null, datetimeISO: datetime_iso,
-      businessName: business.name, cancelToken,
+      businessName: business.name, cancelToken, businessId: business.id,
     }).catch(err => console.error('[email] Error enviando confirmación:', err));
 
     res.status(201).json({ ok: true, booking_id: booking.id, datetime_iso: booking.datetime_iso, cancel_token: cancelToken });

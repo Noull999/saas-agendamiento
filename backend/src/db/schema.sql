@@ -113,6 +113,16 @@ CREATE TABLE IF NOT EXISTS stripe_webhook_events (
   processed_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS message_templates (
+  id          BIGSERIAL PRIMARY KEY,
+  business_id BIGINT    NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  type        TEXT      NOT NULL, -- 'booking_confirmation' | 'reminder' | 'cancellation'
+  channel     TEXT      NOT NULL, -- 'whatsapp' | 'email_subject' | 'email_body'
+  content     TEXT      NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(business_id, type, channel)
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_bookings_business_datetime ON bookings(business_id, datetime_iso);
 CREATE INDEX IF NOT EXISTS idx_bookings_cancel_token ON bookings(cancel_token);

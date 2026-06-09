@@ -1,4 +1,5 @@
 const { withRetry } = require('../lib/retry');
+const { getTemplate, renderTemplate } = require('./messageTemplates');
 
 function formatDatetime(isoString) {
   const d = new Date(isoString);
@@ -65,9 +66,24 @@ async function sendViaBot(payload) {
 }
 
 // Notificación inmediata al crear una reserva
-async function notifyBooking({ clientName, clientPhone, clientEmail, serviceName, datetimeISO, businessName }) {
-  const datetime = formatDatetime(datetimeISO);
-  const message  = `¡Hola ${clientName}! Tu reserva en *${businessName}* ha sido confirmada.\n📅 ${datetime}\n💆 Servicio: ${serviceName || 'General'}\n\nSi necesitas cancelar, contacta directamente al negocio.`;
+async function notifyBooking({ clientName, clientPhone, clientEmail, serviceName, datetimeISO, businessName, businessId, cancelToken, frontendUrl }) {
+  const d = new Date(datetimeISO);
+  const date = d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const time = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  const baseUrl = frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173';
+  const cancelLink = cancelToken ? `${baseUrl}/cancel/${cancelToken}` : '';
+
+  const vars = {
+    clientName,
+    businessName,
+    serviceName: serviceName || 'General',
+    date,
+    time,
+    cancelLink,
+  };
+
+  const template = await getTemplate(businessId, 'booking_confirmation', 'whatsapp');
+  const message = renderTemplate(template, vars);
 
   // Twilio tiene prioridad; si no, usa el bot propio
   if (clientPhone) {
@@ -75,6 +91,7 @@ async function notifyBooking({ clientName, clientPhone, clientEmail, serviceName
     if (sent) return;
   }
 
+  const datetime = formatDatetime(datetimeISO);
   await sendViaBot({
     name: clientName, phone: clientPhone || '', clientEmail: clientEmail || '',
     service: serviceName || '', datetime, datetimeISO, businessName,
@@ -82,14 +99,28 @@ async function notifyBooking({ clientName, clientPhone, clientEmail, serviceName
 }
 
 // Recordatorio 24h antes — llamado por el cron job
-async function notifyReminder({ clientName, clientPhone, serviceName, datetimeISO, businessName }) {
+async function notifyReminder({ clientName, clientPhone, serviceName, datetimeISO, businessName, businessId }) {
   if (!clientPhone) return;
-  const datetime = formatDatetime(datetimeISO);
-  const message  = `⏰ Recordatorio: ${clientName}, mañana tienes una cita en *${businessName}*.\n📅 ${datetime}\n💆 Servicio: ${serviceName || 'General'}\n\n¡Te esperamos!`;
+  const d = new Date(datetimeISO);
+  const date = d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const time = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+  const vars = {
+    clientName,
+    businessName,
+    serviceName: serviceName || 'General',
+    date,
+    time,
+    cancelLink: '',
+  };
+
+  const template = await getTemplate(businessId, 'reminder', 'whatsapp');
+  const message = renderTemplate(template, vars);
 
   const sent = await sendViaTwilio(clientPhone, message).catch(() => false);
   if (sent) return;
 
+  const datetime = formatDatetime(datetimeISO);
   await sendViaBot({
     name: clientName, phone: clientPhone, service: serviceName || '',
     datetime, datetimeISO, businessName, type: 'reminder',
