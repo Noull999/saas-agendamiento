@@ -119,10 +119,20 @@ const fs = require('fs');
 // El frontend compilado vive en backend/public/ para garantizar que esté disponible.
 const DIST = path.join(__dirname, '../public');
 if (fs.existsSync(DIST)) {
-  app.use(express.static(DIST));
+  // Archivos con hash (JS/CSS) → cache largo, son inmutables
+  app.use('/assets', express.static(path.join(DIST, 'assets'), {
+    maxAge: '1y',
+    immutable: true,
+  }));
+  // Otros estáticos (favicon, etc.) sin cache agresivo
+  app.use(express.static(DIST, { maxAge: 0 }));
   // SPA fallback: cualquier ruta que no sea /api/* devuelve index.html
+  // index.html NUNCA debe cachearse — apunta a los assets con hash actualizados
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Ruta no encontrada' });
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(DIST, 'index.html'));
   });
   console.log('[API] Frontend estático habilitado desde', DIST);
