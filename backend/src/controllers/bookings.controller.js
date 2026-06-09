@@ -320,4 +320,61 @@ const updateBooking = async (req, res) => {
   }
 };
 
-module.exports = { list, create, updateStatus, remove, publicCreate, updateBooking };
+const rescheduleBooking = async (req, res) => {
+  const { id } = req.params;
+  const { datetime_iso } = req.body;
+
+  if (!datetime_iso) {
+    return res.status(400).json({ error: 'datetime_iso requerido' });
+  }
+  if (!DATETIME_RE.test(datetime_iso)) {
+    return res.status(400).json({ error: 'datetime_iso inválido' });
+  }
+
+  try {
+    const bookingDate = parseDatetimeSafe(datetime_iso);
+    if (isNaN(bookingDate.getTime())) {
+      return res.status(400).json({ error: 'datetime_iso inválido' });
+    }
+    if (bookingDate <= new Date()) {
+      return res.status(400).json({ error: 'No se puede reservar en una fecha pasada' });
+    }
+
+    // Verify booking belongs to this business
+    const { rows: existing } = await db.query(
+      'SELECT id, service_id FROM bookings WHERE id = $1 AND business_id = $2',
+      [id, req.business.id]
+    );
+    if (!existing[0]) {
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+
+    // Check for double-booking at new datetime (excluding this booking)
+    const { rows: conflict } = await db.query(
+      `SELECT id FROM bookings
+       WHERE business_id = $1
+         AND datetime_iso = $2
+         AND id != $3
+         AND status != 'cancelled'`,
+      [req.business.id, datetime_iso, id]
+    );
+    if (conflict.length > 0) {
+      return res.status(409).json({ error: 'Ese slot ya está reservado' });
+    }
+
+    const { rows } = await db.query(
+      `UPDATE bookings
+       SET datetime_iso = $1, reminder_sent = 0
+       WHERE id = $2 AND business_id = $3
+       RETURNING *`,
+      [datetime_iso, id, req.business.id]
+    );
+
+    res.json({ ok: true, booking: rows[0] });
+  } catch (err) {
+    console.error('[bookings] rescheduleBooking error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { list, create, updateStatus, remove, publicCreate, updateBooking, rescheduleBooking };
