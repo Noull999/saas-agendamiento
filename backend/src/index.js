@@ -110,7 +110,15 @@ app.use('/api/professionals', require('./routes/professionals.routes'));
 // billing incluye el webhook de Stripe (raw body) y el checkout protegido
 app.use('/api/billing', require('./routes/billing.routes'));
 
-app.get('/health', (_, res) => res.json({ ok: true }));
+app.get('/health', async (req, res) => {
+  try {
+    await require('./db/database').query('SELECT 1');
+    res.json({ ok: true, db: 'up', uptime: Math.round(process.uptime()) });
+  } catch (err) {
+    console.error('[health] DB check failed:', err.message);
+    res.status(503).json({ ok: false, db: 'down', error: err.message });
+  }
+});
 
 // Servir el frontend compilado (en producción)
 const path = require('path');
