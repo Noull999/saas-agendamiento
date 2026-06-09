@@ -1,5 +1,5 @@
 const db             = require('../db/database');
-const { notifyReminder } = require('../services/whatsapp');
+const { notifyReminderNotification } = require('../services/notifications');
 
 const INTERVAL_MS = 30 * 60 * 1000; // cada 30 minutos
 let intervalId = null;
@@ -41,7 +41,7 @@ async function sendReminders() {
 
   for (const booking of bookings) {
     try {
-      await notifyReminder({
+      await notifyReminderNotification({
         clientName:   booking.client_name,
         clientPhone:  booking.client_phone,
         clientEmail:  booking.client_email,

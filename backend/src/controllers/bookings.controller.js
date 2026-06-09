@@ -1,6 +1,6 @@
 const db = require('../db/database');
 const { randomUUID } = require('node:crypto');
-const { notifyBooking } = require('../services/whatsapp');
+const { notifyBookingConfirmation } = require('../services/notifications');
 const { sendBookingConfirmation, sendBusinessNotification } = require('../services/email');
 
 const VALID_STATUSES = ['confirmed', 'cancelled', 'completed', 'no_show'];
@@ -274,11 +274,11 @@ const publicCreate = async (req, res) => {
       ? (await db.query('SELECT name FROM services WHERE id = $1', [serviceId])).rows[0]
       : null;
 
-    notifyBooking({
+    notifyBookingConfirmation({
       clientName: name, clientPhone: phone, clientEmail: email,
       serviceName: serviceRow?.name || null, datetimeISO: datetime_iso,
       businessName: business.name, businessId: business.id, cancelToken,
-    }).catch(err => console.error('[whatsapp] Error enviando notificación:', err));
+    }).catch(err => console.error('[notifications] Error enviando notificación:', err));
 
     sendBookingConfirmation({
       clientName: name, clientEmail: email,
