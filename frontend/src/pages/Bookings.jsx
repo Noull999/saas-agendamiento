@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { isValidRut } from '../utils/rut';
+import { useToast } from '../context/ToastContext';
 
 const STATUS_LABELS = {
   confirmed: { label: 'Confirmada', color: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' },
@@ -172,6 +173,7 @@ const EMPTY_PATIENT_FORM = { rut: '', name: '', phone: '', email: '' };
 
 export default function Bookings() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [bookings, setBookings]         = useState([]);
   const [loading, setLoading]           = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -225,7 +227,7 @@ export default function Bookings() {
   };
 
   const createAndLink = async (bookingId) => {
-    if (!isValidRut(newPatientForm.rut)) { alert('RUT inválido'); return; }
+    if (!isValidRut(newPatientForm.rut)) { toast.error('RUT inválido'); return; }
     setLinkSaving(true);
     try {
       const { data: p } = await api.post('/patients', { ...newPatientForm });
@@ -235,7 +237,7 @@ export default function Bookings() {
       setShowNewPatient(false);
       setNewPatientForm(EMPTY_PATIENT_FORM);
     } catch (err) {
-      alert(err.response?.data?.error || 'Error');
+      toast.error(err.response?.data?.error || 'Error');
     } finally {
       setLinkSaving(false);
     }

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { getVertical } from '../config/verticals.config';
 import { isValidRut } from '../utils/rut';
+import { useToast } from '../context/ToastContext';
 
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -47,6 +48,7 @@ function ProgressBar({ step }) {
 
 export default function BookingPage() {
   const { slug } = useParams();
+  const toast = useToast();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
@@ -120,7 +122,7 @@ export default function BookingPage() {
       if (data.cancel_token) setCancelToken(data.cancel_token);
       setStep(5);
     } catch (err) {
-      alert(err.response?.data?.error || 'Error al agendar');
+      toast.error(err.response?.data?.error || 'Error al agendar');
     } finally {
       setSubmitting(false);
     }

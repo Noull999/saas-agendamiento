@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
 
 // Carga inmediata: páginas pequeñas necesarias antes del primer render
@@ -59,6 +60,7 @@ function PublicOnly({ children }) {
 
 function App() {
   return (
+    <ToastProvider>
     <AuthProvider>
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
@@ -93,6 +95,7 @@ function App() {
         </Suspense>
       </BrowserRouter>
     </AuthProvider>
+    </ToastProvider>
   );
 }
 

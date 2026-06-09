@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { VERTICALS } from '../config/verticals.config';
+import { useToast } from '../context/ToastContext';
 
 const PLAN_ORDER = ['basic', 'pro', 'business'];
 const PLAN_BADGE = {
@@ -17,6 +18,7 @@ const PLAN_BORDER = {
 
 export default function Settings() {
   const { business, updateBusiness } = useAuth();
+  const toast = useToast();
   const [form, setForm] = useState({ name: '', phone: '', description: '', vertical: 'salud' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,7 +71,7 @@ export default function Settings() {
       const { data } = await api.post('/billing/checkout', { plan: planId });
       window.location.href = data.url;
     } catch (err) {
-      alert(err.response?.data?.error || 'Error al iniciar el pago');
+      toast.error(err.response?.data?.error || 'Error al iniciar el pago');
     } finally {
       setUpgrading(null);
     }

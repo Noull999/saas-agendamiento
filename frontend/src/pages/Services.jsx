@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client';
+import { useToast } from '../context/ToastContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 const inputClass = 'mt-1.5 w-full bg-zinc-800 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
 
 export default function Services() {
+  const toast = useToast();
   const [services, setServices] = useState([]);
   const [form, setForm] = useState({ name: '', description: '', duration_min: 60, price: '' });
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const load = async () => {
     const { data } = await api.get('/services');
@@ -38,10 +42,23 @@ export default function Services() {
 
   const toggleActive = async (s) => { await api.put(`/services/${s.id}`, { active: s.active ? 0 : 1 }); load(); };
   const edit = (s) => { setEditing(s.id); setForm({ name: s.name, description: s.description || '', duration_min: s.duration_min, price: s.price || '' }); };
-  const remove = async (id) => { if (!confirm('¿Eliminar este servicio?')) return; await api.delete(`/services/${id}`); load(); };
+  const doDelete = async () => {
+    if (!confirmDelete) return;
+    await api.delete(`/services/${confirmDelete}`);
+    setConfirmDelete(null);
+    toast.success('Servicio eliminado');
+    load();
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Eliminar servicio"
+        message="¿Eliminar este servicio? No se puede deshacer."
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
       <div className="md:col-span-2">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white">Servicios</h1>
@@ -76,7 +93,7 @@ export default function Services() {
                     {s.active ? 'Desactivar' : 'Activar'}
                   </button>
                   <button onClick={() => edit(s)} className="text-xs text-red-400 px-2 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors">Editar</button>
-                  <button onClick={() => remove(s.id)} className="text-xs text-red-500 px-2 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors">Eliminar</button>
+                  <button onClick={() => setConfirmDelete(s.id)} className="text-xs text-red-500 px-2 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors">Eliminar</button>
                 </div>
               </div>
             </div>

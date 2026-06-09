@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 const EMPTY_FORM = { name: '', specialty: '', email: '' };
 
 export default function Professionals() {
   const { business } = useAuth();
+  const toast = useToast();
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -13,6 +16,7 @@ export default function Professionals() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   // Pro y Business tienen acceso (Business es el tier superior)
   const isPro = business?.plan === 'pro' || business?.plan === 'business';
@@ -64,9 +68,11 @@ export default function Professionals() {
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('¿Eliminar este profesional?')) return;
-    await api.delete(`/professionals/${id}`);
+  const doDelete = async () => {
+    if (!confirmDelete) return;
+    await api.delete(`/professionals/${confirmDelete}`);
+    setConfirmDelete(null);
+    toast.success('Profesional eliminado');
     load();
   };
 
@@ -74,6 +80,13 @@ export default function Professionals() {
 
   return (
     <div>
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Eliminar profesional"
+        message="¿Eliminar este profesional? No se puede deshacer."
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Profesionales</h1>
@@ -105,7 +118,7 @@ export default function Professionals() {
             </div>
             <div className="flex gap-2 shrink-0">
               <button onClick={() => openEdit(p)} className="text-xs text-red-400 hover:underline">Editar</button>
-              <button onClick={() => remove(p.id)} className="text-xs text-red-500 hover:underline">Eliminar</button>
+              <button onClick={() => setConfirmDelete(p.id)} className="text-xs text-red-500 hover:underline">Eliminar</button>
             </div>
           </div>
         ))}
