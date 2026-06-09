@@ -15,8 +15,8 @@ const router = Router();
 router.get('/settings',  auth, getSettings);
 router.post('/settings', auth, saveSettings);
 
-// Create a payment preference (redirects patient to MP checkout)
-router.post('/preference', auth, createPreference);
+// Create a payment preference (public — called from booking page without JWT)
+router.post('/preference', createPreference);
 
 // Webhook from Mercado Pago — no auth, called server-to-server
 router.post('/webhook', webhook);
