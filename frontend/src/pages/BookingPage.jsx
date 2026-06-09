@@ -18,7 +18,6 @@ function getDatesForNextDays(n = 30) {
   return dates;
 }
 
-
 const STEP_LABELS = ['Servicio', 'Fecha', 'Hora', 'Datos'];
 
 function ProgressBar({ step }) {
@@ -31,13 +30,13 @@ function ProgressBar({ step }) {
         return (
           <div key={label} className="flex items-center gap-2 flex-1 last:flex-none">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
-              done ? 'bg-indigo-600 text-white' : active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'
+              done || active ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-500'
             }`}>
               {done ? '✓' : n}
             </div>
-            <span className={`text-xs font-medium hidden sm:block ${active ? 'text-slate-900' : 'text-slate-400'}`}>{label}</span>
+            <span className={`text-xs font-medium hidden sm:block ${active ? 'text-white' : 'text-zinc-500'}`}>{label}</span>
             {i < STEP_LABELS.length - 1 && (
-              <div className={`flex-1 h-0.5 rounded-full ${done ? 'bg-indigo-600' : 'bg-slate-100'}`} />
+              <div className={`flex-1 h-0.5 rounded-full ${done ? 'bg-red-500' : 'bg-zinc-800'}`} />
             )}
           </div>
         );
@@ -84,14 +83,14 @@ export default function BookingPage() {
   }, [selectedDate, selectedService, slug]);
 
   if (error) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <p className="text-slate-400">{error}</p>
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <p className="text-zinc-500">{error}</p>
     </div>
   );
 
   if (!profile) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
@@ -127,33 +126,33 @@ export default function BookingPage() {
     }
   };
 
-  const inputClass = 'mt-1.5 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50';
+  const inputClass = 'mt-1.5 w-full bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-black">
       {/* Left panel */}
-      <div className="lg:w-80 bg-gradient-to-b from-slate-900 to-indigo-900 text-white p-8 lg:p-10 flex flex-col">
+      <div className="lg:w-80 bg-gradient-to-b from-zinc-950 to-zinc-900 border-b lg:border-b-0 lg:border-r border-zinc-800 text-white p-8 lg:p-10 flex flex-col">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center font-bold text-lg">
+          <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg shadow-red-500/30">
             {business.name[0].toUpperCase()}
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight">{business.name}</h1>
-            <p className="text-indigo-300 text-xs">Reserva en línea</p>
+            <p className="text-zinc-500 text-xs">Reserva en línea</p>
           </div>
         </div>
 
         {step >= 2 && selectedService && (
-          <div className="bg-white/10 rounded-2xl p-5 space-y-3">
-            <p className="text-xs text-indigo-300 uppercase tracking-wider font-medium">Servicio seleccionado</p>
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 space-y-3">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Servicio seleccionado</p>
             <p className="font-semibold text-white">{selectedService.name}</p>
             {selectedService.description && (
-              <p className="text-indigo-200 text-xs">{selectedService.description}</p>
+              <p className="text-zinc-400 text-xs">{selectedService.description}</p>
             )}
             <div className="flex gap-3 pt-1">
-              <span className="text-xs bg-white/10 px-3 py-1 rounded-full">⏱ {selectedService.duration_min} min</span>
+              <span className="text-xs bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full">⏱ {selectedService.duration_min} min</span>
               {selectedService.price && (
-                <span className="text-xs bg-indigo-500/50 px-3 py-1 rounded-full font-medium">
+                <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-full font-medium">
                   ${Number(selectedService.price).toLocaleString('es-CL')}
                 </span>
               )}
@@ -163,40 +162,40 @@ export default function BookingPage() {
 
         {step === 1 && (
           <div className="mt-auto">
-            <p className="text-indigo-300 text-sm">Elige un servicio para comenzar tu reserva.</p>
+            <p className="text-zinc-500 text-sm">Elige un servicio para comenzar tu reserva.</p>
           </div>
         )}
 
         {step >= 3 && selectedDate && (
-          <div className="mt-4 bg-white/10 rounded-2xl p-4">
-            <p className="text-xs text-indigo-300 mb-1">Fecha</p>
-            <p className="font-semibold capitalize">
+          <div className="mt-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+            <p className="text-xs text-zinc-500 mb-1">Fecha</p>
+            <p className="font-semibold capitalize text-white">
               {DAYS[selectedDate.getDay()]} {selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]}
             </p>
             {step >= 4 && selectedSlot && (
-              <p className="text-indigo-200 text-sm mt-1">🕐 {selectedSlot} hrs</p>
+              <p className="text-zinc-400 text-sm mt-1">🕐 {selectedSlot} hrs</p>
             )}
           </div>
         )}
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 bg-white p-8 lg:p-12 overflow-auto">
+      <div className="flex-1 bg-black p-8 lg:p-12 overflow-auto">
 
         {/* Step 5: Confirmación */}
         {step === 5 && (
           <div className="max-w-md mx-auto text-center pt-8">
-            <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">✅</div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">¡Reserva confirmada!</h2>
-            <p className="text-slate-500 mb-8">Tu hora ha sido agendada exitosamente en <strong>{business.name}</strong>.</p>
-            <div className="bg-slate-50 rounded-2xl p-5 text-left text-sm space-y-3 mb-8">
-              {selectedService && <div className="flex justify-between"><span className="text-slate-500">Servicio</span><span className="font-medium">{selectedService.name}</span></div>}
-              {selectedDate && <div className="flex justify-between"><span className="text-slate-500">Fecha</span><span className="font-medium capitalize">{DAYS[selectedDate.getDay()]} {selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]}</span></div>}
-              {selectedSlot && <div className="flex justify-between"><span className="text-slate-500">Hora</span><span className="font-medium">{selectedSlot} hrs</span></div>}
-              <div className="flex justify-between"><span className="text-slate-500">Nombre</span><span className="font-medium">{form.client_name}</span></div>
+            <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">✅</div>
+            <h2 className="text-2xl font-bold text-white mb-2">¡Reserva confirmada!</h2>
+            <p className="text-zinc-400 mb-8">Tu hora ha sido agendada exitosamente en <strong className="text-white">{business.name}</strong>.</p>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-left text-sm space-y-3 mb-8">
+              {selectedService && <div className="flex justify-between"><span className="text-zinc-500">Servicio</span><span className="font-medium text-white">{selectedService.name}</span></div>}
+              {selectedDate && <div className="flex justify-between"><span className="text-zinc-500">Fecha</span><span className="font-medium capitalize text-white">{DAYS[selectedDate.getDay()]} {selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]}</span></div>}
+              {selectedSlot && <div className="flex justify-between"><span className="text-zinc-500">Hora</span><span className="font-medium text-white">{selectedSlot} hrs</span></div>}
+              <div className="flex justify-between"><span className="text-zinc-500">Nombre</span><span className="font-medium text-white">{form.client_name}</span></div>
             </div>
             {(form.client_phone || form.client_email) && (
-              <p className="text-sm text-indigo-600 bg-indigo-50 rounded-xl px-4 py-3 mb-4">
+              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
                 {form.client_email
                   ? `📧 Enviamos la confirmación a ${form.client_email}`
                   : `📱 Te enviaremos la confirmación al ${form.client_phone}`}
@@ -207,14 +206,14 @@ export default function BookingPage() {
             <div className="flex flex-col gap-2 mb-6">
               <a
                 href={`/book/${slug}/mis-citas`}
-                className="block text-center text-sm bg-white border border-slate-200 rounded-xl py-2.5 text-slate-700 hover:bg-slate-50 font-medium"
+                className="block text-center text-sm bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 text-zinc-300 hover:bg-zinc-800 font-medium transition-colors"
               >
                 📅 Ver mis citas
               </a>
               {cancelToken && (
                 <a
                   href={`/cancel/${cancelToken}`}
-                  className="block text-center text-sm text-slate-400 hover:text-red-500 py-1"
+                  className="block text-center text-sm text-zinc-500 hover:text-red-400 py-1 transition-colors"
                 >
                   Cancelar esta reserva
                 </a>
@@ -223,7 +222,7 @@ export default function BookingPage() {
 
             <button
               onClick={() => { setStep(1); setSelectedService(null); setSelectedDate(null); setSelectedSlot(null); setCancelToken(null); setForm({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' }); }}
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-red-400 hover:text-red-300 hover:underline transition-colors"
             >
               Agendar otra hora
             </button>
@@ -237,24 +236,24 @@ export default function BookingPage() {
             {/* Step 1: Servicio */}
             {step === 1 && (
               <div>
-                <h2 className="text-xl font-bold text-slate-900 mb-1">¿Qué servicio necesitas?</h2>
-                <p className="text-slate-500 text-sm mb-6">Selecciona el servicio para tu cita</p>
-                {services.length === 0 && <p className="text-slate-400 text-sm">Este negocio no tiene servicios configurados aún.</p>}
+                <h2 className="text-xl font-bold text-white mb-1">¿Qué servicio necesitas?</h2>
+                <p className="text-zinc-500 text-sm mb-6">Selecciona el servicio para tu cita</p>
+                {services.length === 0 && <p className="text-zinc-600 text-sm">Este negocio no tiene servicios configurados aún.</p>}
                 <div className="space-y-3">
                   {services.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => { setSelectedService(s); setStep(2); }}
-                      className="w-full text-left p-4 border-2 border-slate-100 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group"
+                      className="w-full text-left p-4 bg-zinc-900 border-2 border-zinc-800 rounded-2xl hover:border-red-500 hover:bg-zinc-900/70 transition-all group"
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-semibold text-slate-900 text-sm group-hover:text-indigo-700">{s.name}</p>
-                          {s.description && <p className="text-slate-400 text-xs mt-0.5">{s.description}</p>}
+                          <p className="font-semibold text-white text-sm group-hover:text-red-400 transition-colors">{s.name}</p>
+                          {s.description && <p className="text-zinc-500 text-xs mt-0.5">{s.description}</p>}
                         </div>
                         <div className="text-right shrink-0 ml-4">
-                          <p className="text-sm text-slate-500">{s.duration_min} min</p>
-                          {s.price && <p className="text-xs font-semibold text-indigo-600">${Number(s.price).toLocaleString('es-CL')}</p>}
+                          <p className="text-sm text-zinc-400">{s.duration_min} min</p>
+                          {s.price && <p className="text-xs font-semibold text-red-400">${Number(s.price).toLocaleString('es-CL')}</p>}
                         </div>
                       </div>
                     </button>
@@ -266,22 +265,22 @@ export default function BookingPage() {
             {/* Step 2: Fecha */}
             {step === 2 && (
               <div>
-                <button onClick={() => setStep(1)} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-700 mb-6 transition-colors">
+                <button onClick={() => setStep(1)} className="flex items-center gap-1 text-sm text-zinc-500 hover:text-white mb-6 transition-colors">
                   ← Volver
                 </button>
-                <h2 className="text-xl font-bold text-slate-900 mb-1">Elige una fecha</h2>
-                <p className="text-slate-500 text-sm mb-6">Fechas disponibles en los próximos 30 días</p>
-                {availableDates.length === 0 && <p className="text-slate-400 text-sm">No hay fechas disponibles en los próximos 30 días.</p>}
+                <h2 className="text-xl font-bold text-white mb-1">Elige una fecha</h2>
+                <p className="text-zinc-500 text-sm mb-6">Fechas disponibles en los próximos 30 días</p>
+                {availableDates.length === 0 && <p className="text-zinc-600 text-sm">No hay fechas disponibles en los próximos 30 días.</p>}
                 <div className="grid grid-cols-3 gap-2">
                   {availableDates.map((d) => (
                     <button
                       key={d.toISOString()}
                       onClick={() => { setSelectedDate(d); setStep(3); }}
-                      className="p-3 border-2 border-slate-100 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-center group"
+                      className="p-3 bg-zinc-900 border-2 border-zinc-800 rounded-2xl hover:border-red-500 hover:bg-zinc-900/70 transition-all text-center group"
                     >
-                      <p className="text-xs text-slate-400 capitalize group-hover:text-indigo-500">{DAYS[d.getDay()].slice(0, 3)}</p>
-                      <p className="font-bold text-slate-900 text-lg leading-tight">{d.getDate()}</p>
-                      <p className="text-xs text-slate-400 capitalize">{MONTHS[d.getMonth()].slice(0, 3)}</p>
+                      <p className="text-xs text-zinc-500 capitalize group-hover:text-red-400 transition-colors">{DAYS[d.getDay()].slice(0, 3)}</p>
+                      <p className="font-bold text-white text-lg leading-tight">{d.getDate()}</p>
+                      <p className="text-xs text-zinc-500 capitalize">{MONTHS[d.getMonth()].slice(0, 3)}</p>
                     </button>
                   ))}
                 </div>
@@ -291,18 +290,18 @@ export default function BookingPage() {
             {/* Step 3: Hora */}
             {step === 3 && (
               <div>
-                <button onClick={() => setStep(2)} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-700 mb-6 transition-colors">
+                <button onClick={() => setStep(2)} className="flex items-center gap-1 text-sm text-zinc-500 hover:text-white mb-6 transition-colors">
                   ← Volver
                 </button>
-                <h2 className="text-xl font-bold text-slate-900 mb-1">Elige un horario</h2>
-                <p className="text-slate-500 text-sm mb-6">Horarios disponibles para el día seleccionado</p>
+                <h2 className="text-xl font-bold text-white mb-1">Elige un horario</h2>
+                <p className="text-zinc-500 text-sm mb-6">Horarios disponibles para el día seleccionado</p>
                 {loadingSlots && (
                   <div className="flex justify-center py-8">
-                    <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-7 h-7 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
                 {!loadingSlots && availableSlots.length === 0 && (
-                  <p className="text-slate-400 text-sm">No hay horarios disponibles para este día.</p>
+                  <p className="text-zinc-600 text-sm">No hay horarios disponibles para este día.</p>
                 )}
                 {!loadingSlots && availableSlots.length > 0 && (
                   <div className="grid grid-cols-4 gap-2">
@@ -310,7 +309,7 @@ export default function BookingPage() {
                       <button
                         key={slot}
                         onClick={() => { setSelectedSlot(slot); setStep(4); }}
-                        className="py-3 border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 transition-all"
+                        className="py-3 bg-zinc-900 border-2 border-zinc-800 rounded-2xl text-sm font-semibold text-zinc-300 hover:border-red-500 hover:bg-zinc-900/70 hover:text-red-400 transition-all"
                       >
                         {slot}
                       </button>
@@ -323,14 +322,14 @@ export default function BookingPage() {
             {/* Step 4: Datos */}
             {step === 4 && (
               <div>
-                <button onClick={() => setStep(3)} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-700 mb-6 transition-colors">
+                <button onClick={() => setStep(3)} className="flex items-center gap-1 text-sm text-zinc-500 hover:text-white mb-6 transition-colors">
                   ← Volver
                 </button>
-                <h2 className="text-xl font-bold text-slate-900 mb-1">Tus datos de contacto</h2>
-                <p className="text-slate-500 text-sm mb-6">Para enviarte la confirmación de tu reserva</p>
+                <h2 className="text-xl font-bold text-white mb-1">Tus datos de contacto</h2>
+                <p className="text-zinc-500 text-sm mb-6">Para enviarte la confirmación de tu reserva</p>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-700">Nombre completo *</label>
+                    <label className="text-xs font-semibold text-zinc-300">Nombre completo *</label>
                     <input
                       required value={form.client_name}
                       onChange={(e) => setForm({ ...form, client_name: e.target.value })}
@@ -340,12 +339,12 @@ export default function BookingPage() {
                   </div>
                   {showRut && (
                     <div>
-                      <label className="text-xs font-semibold text-slate-700">
+                      <label className="text-xs font-semibold text-zinc-300">
                         RUT *{' '}
                         {form.client_rut.length > 2 && (
                           isValidRut(form.client_rut)
-                            ? <span className="text-emerald-600 font-normal">✓ válido</span>
-                            : <span className="text-red-500 font-normal">inválido</span>
+                            ? <span className="text-emerald-400 font-normal">✓ válido</span>
+                            : <span className="text-red-400 font-normal">inválido</span>
                         )}
                       </label>
                       <input
@@ -357,17 +356,17 @@ export default function BookingPage() {
                     </div>
                   )}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700">Teléfono WhatsApp *</label>
+                    <label className="text-xs font-semibold text-zinc-300">Teléfono WhatsApp *</label>
                     <input
                       required value={form.client_phone}
                       onChange={(e) => setForm({ ...form, client_phone: e.target.value })}
                       placeholder="+56 9 1234 5678"
                       className={inputClass}
                     />
-                    <p className="text-xs text-slate-400 mt-1">Recibirás la confirmación por WhatsApp</p>
+                    <p className="text-xs text-zinc-500 mt-1">Recibirás la confirmación por WhatsApp</p>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-700">Email <span className="font-normal text-slate-400">(opcional)</span></label>
+                    <label className="text-xs font-semibold text-zinc-300">Email <span className="font-normal text-zinc-500">(opcional)</span></label>
                     <input
                       type="email" value={form.client_email}
                       onChange={(e) => setForm({ ...form, client_email: e.target.value })}
@@ -375,7 +374,7 @@ export default function BookingPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-700">Notas adicionales</label>
+                    <label className="text-xs font-semibold text-zinc-300">Notas adicionales</label>
                     <textarea
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -388,7 +387,7 @@ export default function BookingPage() {
                     onClick={handleSubmit}
                     disabled={submitting || !form.client_name || !form.client_phone ||
                       (showRut && !isValidRut(form.client_rut))}
-                    className="w-full bg-indigo-600 text-white rounded-2xl py-3.5 text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors mt-2"
+                    className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl py-3.5 text-sm font-bold hover:from-red-600 hover:to-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all mt-2 shadow-lg shadow-red-500/20"
                   >
                     {submitting ? 'Agendando...' : 'Confirmar reserva →'}
                   </button>
