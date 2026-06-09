@@ -162,7 +162,7 @@ export default function Settings() {
     setUpgrading(planId);
     try {
       const { data } = await api.post('/billing/checkout', { plan: planId });
-      window.location.href = data.url;
+      window.location.assign(data.url);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al iniciar el pago');
     } finally {

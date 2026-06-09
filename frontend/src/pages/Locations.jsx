@@ -13,10 +13,6 @@ export default function Locations() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
 
-  useEffect(() => {
-    fetchLocations();
-  }, []);
-
   const fetchLocations = async () => {
     setLoading(true);
     try {
@@ -28,6 +24,9 @@ export default function Locations() {
       setLoading(false);
     }
   };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchLocations(); }, []);
 
   const openCreate = () => {
     setEditingId(null);
