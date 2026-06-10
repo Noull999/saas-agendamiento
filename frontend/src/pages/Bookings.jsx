@@ -5,6 +5,7 @@ import { isValidRut } from '../utils/rut';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { SkeletonTable } from '../components/Skeleton';
+import { getVertical } from '../config/verticals.config';
 
 const STATUS_LABELS = {
   confirmed: { label: 'Confirmada', color: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' },
@@ -72,7 +73,7 @@ function isoDate(d) {
 }
 
 // ─── Calendar week view ─────────────────────────────────────────────────────
-function CalendarView({ bookings, navigate }) {
+function CalendarView({ bookings, navigate, isSalud }) {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -148,7 +149,7 @@ function CalendarView({ bookings, navigate }) {
                   <div
                     key={b.id}
                     className={`rounded-lg border px-1.5 py-1 text-xs cursor-pointer hover:shadow-sm transition-shadow ${STATUS_COLORS[b.status] || 'bg-slate-50 border-slate-200'}`}
-                    onClick={() => b.patient_id && navigate(`/dashboard/pacientes/${b.patient_id}`)}
+                    onClick={() => isSalud && b.patient_id && navigate(`/dashboard/pacientes/${b.patient_id}`)}
                     title={`${b.client_name} · ${formatTime(b.datetime_iso)}`}
                   >
                     <p className="font-semibold truncate leading-tight">{formatTime(b.datetime_iso)}</p>
@@ -276,6 +277,10 @@ export default function Bookings() {
   const navigate = useNavigate();
   const toast = useToast();
   const { business } = useAuth();
+  const vertical = getVertical(business?.vertical);
+  const isSalud = (business?.vertical || 'salud') === 'salud';
+  // 'paciente' para salud, 'cliente' para belleza/general
+  const personLabel = vertical.booking.clientLabel.toLowerCase();
   const [bookings, setBookings]         = useState([]);
   const [loading, setLoading]           = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -329,7 +334,7 @@ export default function Bookings() {
   };
 
   const createAndLink = async (bookingId) => {
-    if (!isValidRut(newPatientForm.rut)) { toast.error('RUT inválido'); return; }
+    if (isSalud && !isValidRut(newPatientForm.rut)) { toast.error('RUT inválido'); return; }
     setLinkSaving(true);
     try {
       const { data: p } = await api.post('/patients', { ...newPatientForm });
@@ -466,6 +471,7 @@ export default function Bookings() {
             bookings={bookings}
             onChangeStatus={changeStatus}
             navigate={navigate}
+            isSalud={isSalud}
           />
         </div>
       )}
@@ -523,7 +529,7 @@ export default function Bookings() {
                         )}
                         {b.patient_name ? (
                           <button
-                            onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
+                            onClick={() => navigate(isSalud ? `/dashboard/pacientes/${b.patient_id}` : '/dashboard/clientes')}
                             className="text-xs text-red-400 hover:underline"
                           >
                             👤 {b.patient_name}
@@ -533,7 +539,7 @@ export default function Bookings() {
                             onClick={() => { setLinkModal(b.id); setPatientSearch(''); setPatientResults([]); setShowNewPatient(false); setNewPatientForm(EMPTY_PATIENT_FORM); }}
                             className="text-xs text-zinc-500 hover:text-red-400 border border-dashed border-zinc-700 hover:border-red-500/50 px-2 py-0.5 rounded-lg"
                           >
-                            Vincular paciente
+                            Vincular {personLabel}
                           </button>
                         )}
                       </div>
@@ -541,7 +547,7 @@ export default function Bookings() {
 
                     <div className="text-red-400 font-bold text-sm shrink-0">{formatTime(b.datetime_iso)}</div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {b.patient_id && (
+                      {b.patient_id && isSalud && (
                         <button
                           onClick={() => navigate(`/dashboard/pacientes/${b.patient_id}`)}
                           className="text-xs border border-zinc-700 px-2 py-1 rounded-lg text-zinc-300 hover:bg-zinc-800"
@@ -575,7 +581,7 @@ export default function Bookings() {
       {linkModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-zinc-900 rounded-2xl shadow-xl border border-zinc-800 w-full max-w-sm p-6">
-            <h2 className="text-lg font-bold text-white mb-4">Vincular paciente</h2>
+            <h2 className="text-lg font-bold text-white mb-4">Vincular {personLabel}</h2>
             {!showNewPatient ? (
               <>
                 <input
@@ -599,7 +605,7 @@ export default function Bookings() {
                   <p className="text-zinc-500 text-xs mb-3">No encontrado.</p>
                 )}
                 <button onClick={() => setShowNewPatient(true)} className="text-sm text-red-400 hover:underline mt-2 block">
-                  + Crear nuevo paciente
+                  + Crear nuevo {personLabel}
                 </button>
                 <div className="mt-4">
                   <button onClick={() => setLinkModal(null)} className="w-full border border-zinc-700 rounded-xl py-2 text-sm text-zinc-300 hover:bg-zinc-800">Cancelar</button>
@@ -607,10 +613,12 @@ export default function Bookings() {
               </>
             ) : (
               <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">RUT *</label>
-                  <input value={newPatientForm.rut} onChange={e => setNewPatientForm({ ...newPatientForm, rut: e.target.value })} placeholder="12.345.678-9" className={inputClass} />
-                </div>
+                {isSalud && (
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">RUT *</label>
+                    <input value={newPatientForm.rut} onChange={e => setNewPatientForm({ ...newPatientForm, rut: e.target.value })} placeholder="12.345.678-9" className={inputClass} />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">Nombre *</label>
                   <input value={newPatientForm.name} onChange={e => setNewPatientForm({ ...newPatientForm, name: e.target.value })} className={inputClass} />

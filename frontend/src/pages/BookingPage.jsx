@@ -79,7 +79,7 @@ export default function BookingPage() {
   useEffect(() => {
     const paymentResult = searchParams.get('payment');
     if (paymentResult === 'success') toast.success('¡Pago recibido! Tu reserva está confirmada.');
-    else if (paymentResult === 'failure') toast.error('El pago fue rechazado. Puedes intentarlo de nuevo o pagar en la consulta.');
+    else if (paymentResult === 'failure') toast.error('El pago fue rechazado. Puedes intentarlo de nuevo o pagar presencialmente.');
     else if (paymentResult === 'pending') toast.info?.('Pago pendiente de acreditación. Te notificaremos cuando se confirme.');
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -283,7 +283,7 @@ export default function BookingPage() {
                   <span className="text-2xl">🏧</span>
                   <div>
                     <p className="font-semibold text-white text-sm">Débito o tarjeta en el lugar</p>
-                    <p className="text-zinc-400 text-xs">Pagas con tu tarjeta al llegar a la consulta</p>
+                    <p className="text-zinc-400 text-xs">Pagas con tu tarjeta al llegar a tu cita</p>
                   </div>
                 </div>
               </button>
@@ -298,7 +298,7 @@ export default function BookingPage() {
                   <span className="text-2xl">💵</span>
                   <div>
                     <p className="font-semibold text-white text-sm">Efectivo en el lugar</p>
-                    <p className="text-zinc-400 text-xs">Llevas el dinero el día de la consulta</p>
+                    <p className="text-zinc-400 text-xs">Llevas el dinero el día de tu cita</p>
                   </div>
                 </div>
               </button>

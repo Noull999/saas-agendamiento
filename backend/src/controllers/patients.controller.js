@@ -81,10 +81,12 @@ const create = async (req, res) => {
 
   try {
     const { rows: bizRows } = await db.query('SELECT vertical FROM businesses WHERE id = $1', [req.business.id]);
-    const isBelleza = (bizRows[0]?.vertical || 'salud') === 'belleza';
+    // Solo el vertical salud exige RUT chileno; belleza y general usan un
+    // identificador interno (coincide con showRut en verticals.config.js)
+    const requiresRut = (bizRows[0]?.vertical || 'salud') === 'salud';
 
     let safeRut;
-    if (isBelleza) {
+    if (!requiresRut) {
       safeRut = `CLI-${req.business.id}-${Date.now()}`;
     } else {
       if (!rut) return res.status(400).json({ error: 'rut y name son requeridos' });

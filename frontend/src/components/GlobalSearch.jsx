@@ -74,7 +74,7 @@ export default function GlobalSearch() {
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar reservas, pacientes..."
+            placeholder="Buscar reservas y clientes..."
             className="flex-1 bg-transparent text-white placeholder-zinc-500 outline-none text-sm"
           />
           <kbd className="text-xs text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-700">Esc</kbd>
