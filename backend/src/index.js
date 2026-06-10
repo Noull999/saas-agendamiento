@@ -53,14 +53,6 @@ app.use(cors({
   credentials: false,
 }));
 
-// El webhook de Stripe necesita el body en crudo (Buffer), no parseado.
-// Se registra ANTES de express.json() para que no lo intercepte.
-app.post(
-  '/api/billing/webhook',
-  express.raw({ type: 'application/json' }),
-  require('./controllers/billing.controller').webhook
-);
-
 // Limit request body size (prevent DoS via huge payloads)
 app.use(express.json({ limit: '50kb' }));
 
@@ -107,7 +99,7 @@ app.use('/api/patients', require('./routes/patients.routes'));
 app.use('/api/consultations', require('./routes/consultations.routes'));
 app.use('/api/prescriptions', require('./routes/prescriptions.routes'));
 app.use('/api/professionals', require('./routes/professionals.routes'));
-// billing incluye el webhook de Stripe (raw body) y el checkout protegido
+// billing: suscripciones Mercado Pago (checkout, confirm, webhook, plans)
 app.use('/api/billing', require('./routes/billing.routes'));
 app.use('/api/locations', require('./routes/locations.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));

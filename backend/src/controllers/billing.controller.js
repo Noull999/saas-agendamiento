@@ -1,122 +1,159 @@
 const db = require('../db/database');
 
-function getStripe() {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY no configurada');
-  }
-  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+// ── Suscripciones vía Mercado Pago (preapproval) ─────────────────────────────
+// El cobro mensual del SaaS llega a la cuenta MP de la plataforma
+// (MERCADO_PAGO_ACCESS_TOKEN en el entorno), no a la de cada negocio.
+
+const PLAN_PRICES = {
+  basic:    9990,
+  pro:      19990,
+  business: 34990,
+};
+
+function getPlatformToken() {
+  const token = process.env.MP_PLATFORM_ACCESS_TOKEN || process.env.MERCADO_PAGO_ACCESS_TOKEN;
+  if (!token) throw new Error('Token de Mercado Pago de la plataforma no configurado');
+  return token;
 }
 
-const PLAN_PRICE_IDS = {
-  pro:      process.env.STRIPE_PRICE_PRO,
-  business: process.env.STRIPE_PRICE_BUSINESS,
-};
+async function mpFetch(path, options = {}) {
+  const res = await fetch(`https://api.mercadopago.com${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${getPlatformToken()}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.message || `MP API ${res.status}`);
+  }
+  return body;
+}
 
-// POST /api/billing/checkout
+// Activa el plan de un negocio a partir de un preapproval autorizado.
+// Valida monto y external_reference para evitar manipulación.
+async function activateFromPreapproval(preapproval, expectedBusinessId = null) {
+  const [bizIdRaw, plan] = String(preapproval.external_reference || '').split(':');
+  const businessId = parseInt(bizIdRaw, 10);
+
+  if (!businessId || !PLAN_PRICES[plan]) {
+    throw new Error(`external_reference inválido: ${preapproval.external_reference}`);
+  }
+  if (expectedBusinessId && businessId !== Number(expectedBusinessId)) {
+    throw new Error('La suscripción no corresponde a este negocio');
+  }
+  const amount = Number(preapproval.auto_recurring?.transaction_amount);
+  if (amount !== PLAN_PRICES[plan]) {
+    throw new Error(`Monto no coincide con el plan ${plan}`);
+  }
+  if (preapproval.status !== 'authorized') {
+    throw new Error(`Suscripción no autorizada (estado: ${preapproval.status})`);
+  }
+
+  await db.query(
+    `UPDATE businesses
+        SET plan = $1, subscription_status = 'active', mp_preapproval_id = $2
+      WHERE id = $3`,
+    [plan, preapproval.id, businessId]
+  );
+  console.log(`[billing] Suscripción MP activada: business #${businessId} → plan ${plan}`);
+  return { businessId, plan };
+}
+
+// POST /api/billing/checkout   { plan: 'basic' | 'pro' | 'business' }
 const createCheckout = async (req, res) => {
+  const { plan } = req.body;
+  const price = PLAN_PRICES[plan];
+
+  if (!price) {
+    return res.status(400).json({ error: 'Plan inválido. Valores aceptados: basic, pro, business' });
+  }
+
   try {
-    const stripe  = getStripe();
-    const { plan } = req.body;
-    const priceId  = PLAN_PRICE_IDS[plan];
-
-    if (!priceId) {
-      return res.status(400).json({ error: 'Plan inválido. Valores aceptados: pro, business' });
-    }
-
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${frontendUrl}/dashboard/configuracion?upgrade=success`,
-      cancel_url:  `${frontendUrl}/dashboard/configuracion?upgrade=cancelled`,
-      metadata: {
-        business_id: String(req.business.id),
-        plan,
-      },
+    const preapproval = await mpFetch('/preapproval', {
+      method: 'POST',
+      body: JSON.stringify({
+        reason: `AgendaSaaS — Plan ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
+        external_reference: `${req.business.id}:${plan}`,
+        payer_email: req.business.email,
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: 'months',
+          transaction_amount: price,
+          currency_id: 'CLP',
+        },
+        back_url: `${frontendUrl}/dashboard/configuracion`,
+        status: 'pending',
+      }),
     });
 
-    res.json({ url: session.url });
+    res.json({ url: preapproval.init_point });
   } catch (err) {
-    console.error('[billing] Error al crear checkout:', err.message);
-    res.status(500).json({ error: 'No se pudo iniciar el pago. Verifica la configuración de Stripe.' });
+    console.error('[billing] Error al crear suscripción MP:', err.message);
+    res.status(500).json({ error: 'No se pudo iniciar la suscripción. Intenta de nuevo.' });
   }
 };
 
-// POST /api/billing/webhook  (raw body — ver billing.routes.js)
+// POST /api/billing/confirm   { preapproval_id }
+// El usuario vuelve de MP con ?preapproval_id=... en la URL; el frontend lo
+// envía aquí para verificar contra la API de MP y activar el plan.
+const confirmSubscription = async (req, res) => {
+  const { preapproval_id } = req.body;
+  if (!preapproval_id) {
+    return res.status(400).json({ error: 'preapproval_id requerido' });
+  }
+
+  try {
+    const preapproval = await mpFetch(`/preapproval/${encodeURIComponent(preapproval_id)}`);
+    const { plan } = await activateFromPreapproval(preapproval, req.business.id);
+    res.json({ ok: true, plan });
+  } catch (err) {
+    console.error('[billing] Error confirmando suscripción:', err.message);
+    res.status(400).json({ error: 'No se pudo confirmar la suscripción: ' + err.message });
+  }
+};
+
+// POST /api/billing/webhook   (sin auth — Mercado Pago server-to-server)
 const webhook = async (req, res) => {
-  const sig    = req.headers['stripe-signature'];
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const { type, data } = req.body || {};
 
-  if (!secret) {
-    console.error('[billing] STRIPE_WEBHOOK_SECRET no configurado');
-    return res.status(500).json({ error: 'Webhook no configurado' });
-  }
-
-  let event;
-  try {
-    const stripe = getStripe();
-    event = stripe.webhooks.constructEvent(req.body, sig, secret);
-  } catch (err) {
-    console.error('[billing] Firma de webhook inválida:', err.message);
-    return res.status(400).json({ error: `Webhook error: ${err.message}` });
-  }
-
-  // Idempotency: skip already-processed events
-  try {
-    const { rows: existing } = await db.query(
-      'SELECT stripe_event_id FROM stripe_webhook_events WHERE stripe_event_id = $1',
-      [event.id]
-    );
-    if (existing.length) {
-      return res.json({ received: true, duplicate: true });
-    }
-    await db.query(
-      'INSERT INTO stripe_webhook_events (stripe_event_id, processed_at) VALUES ($1, NOW())',
-      [event.id]
-    );
-  } catch (err) {
-    console.error('[billing] Error al verificar idempotencia:', err.message);
-    // Continue processing — better to process twice than skip
+  if (type !== 'subscription_preapproval' || !data?.id) {
+    return res.json({ ok: true });
   }
 
   try {
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      const { business_id, plan } = session.metadata || {};
+    const preapproval = await mpFetch(`/preapproval/${encodeURIComponent(data.id)}`);
 
-      const VALID_PLANS = ['pro', 'business'];
-      if (business_id && VALID_PLANS.includes(plan)) {
-        await db.query('UPDATE businesses SET plan = $1 WHERE id = $2', [plan, parseInt(business_id)]);
-        console.log(`[billing] Plan actualizado a '${plan}' para business #${business_id}`);
-      }
+    if (preapproval.status === 'authorized') {
+      await activateFromPreapproval(preapproval);
+    } else if (['cancelled', 'paused'].includes(preapproval.status)) {
+      await db.query(
+        `UPDATE businesses SET subscription_status = 'cancelled' WHERE mp_preapproval_id = $1`,
+        [preapproval.id]
+      );
+      console.log(`[billing] Suscripción ${preapproval.id} → ${preapproval.status}`);
     }
 
-    if (event.type === 'customer.subscription.deleted') {
-      const sub = event.data.object;
-      const businessId = sub.metadata?.business_id;
-      if (businessId) {
-        await db.query("UPDATE businesses SET plan = 'basic' WHERE id = $1", [parseInt(businessId)]);
-        console.log(`[billing] Plan revertido a 'basic' para business #${businessId}`);
-      }
-    }
+    res.json({ ok: true });
   } catch (err) {
-    console.error('[billing] Error procesando webhook:', err.message);
-    return res.status(500).json({ error: 'Error procesando webhook' });
+    console.error('[billing] Error procesando webhook MP:', err.message);
+    res.status(500).json({ error: 'Error procesando webhook' });
   }
-
-  res.json({ received: true });
 };
 
 // GET /api/billing/plans
 const getPlans = (_req, res) => {
   res.json({
+    trialDays: 14,
     plans: [
       {
         id:       'basic',
         name:     'Basic',
-        price:    9990,
+        price:    PLAN_PRICES.basic,
         currency: 'CLP',
         features: [
           '1 profesional',
@@ -128,7 +165,7 @@ const getPlans = (_req, res) => {
       {
         id:       'pro',
         name:     'Pro',
-        price:    19990,
+        price:    PLAN_PRICES.pro,
         currency: 'CLP',
         highlight: true,
         features: [
@@ -140,12 +177,11 @@ const getPlans = (_req, res) => {
           'Analytics de ingresos',
           'Soporte prioritario',
         ],
-        stripePriceId: PLAN_PRICE_IDS.pro || null,
       },
       {
         id:       'business',
         name:     'Business',
-        price:    34990,
+        price:    PLAN_PRICES.business,
         currency: 'CLP',
         features: [
           'Todo lo de Pro',
@@ -154,10 +190,9 @@ const getPlans = (_req, res) => {
           'Múltiples sedes',
           'Onboarding personalizado',
         ],
-        stripePriceId: PLAN_PRICE_IDS.business || null,
       },
     ],
   });
 };
 
-module.exports = { createCheckout, webhook, getPlans };
+module.exports = { createCheckout, confirmSubscription, webhook, getPlans };

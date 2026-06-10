@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getVertical, meetsMinPlan } from '../config/verticals.config';
@@ -10,6 +11,12 @@ export default function Layout({ children }) {
   const vertical = getVertical(business?.vertical);
   const handleLogout = () => { logout(); navigate('/'); };
 
+  const [now] = useState(() => Date.now());
+  const isTrial = business?.subscription_status === 'trial';
+  const trialDaysLeft = isTrial && business?.trial_ends_at
+    ? Math.max(0, Math.ceil((new Date(business.trial_ends_at) - now) / 86400000))
+    : null;
+
   return (
     <div className="flex min-h-screen bg-zinc-950">
       <aside className="w-60 bg-zinc-950 flex flex-col shrink-0 border-r border-zinc-800">
@@ -20,7 +27,9 @@ export default function Layout({ children }) {
             </div>
             <div className="min-w-0">
               <span className="text-white font-semibold text-sm truncate block">{business?.name || 'Dashboard'}</span>
-              <span className="text-zinc-500 text-xs capitalize">{business?.plan || 'basic'}</span>
+              <span className="text-zinc-500 text-xs capitalize">
+                {isTrial ? 'Prueba gratis' : (business?.plan || 'basic')}
+              </span>
             </div>
           </div>
         </div>
@@ -90,8 +99,30 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-auto bg-zinc-950">
-        {children}
+      <main className="flex-1 overflow-auto bg-zinc-950 flex flex-col">
+        {isTrial && trialDaysLeft != null && (
+          <div className={`px-8 py-2.5 text-sm flex items-center justify-between gap-3 border-b ${
+            trialDaysLeft <= 3
+              ? 'bg-red-500/10 border-red-500/30 text-red-300'
+              : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+          }`}>
+            <span>
+              🎁 Prueba gratis: {trialDaysLeft === 0
+                ? 'termina hoy'
+                : trialDaysLeft === 1 ? 'queda 1 día' : `quedan ${trialDaysLeft} días`}
+              {' '}— todas las funciones desbloqueadas
+            </span>
+            <Link
+              to="/dashboard/configuracion"
+              className="shrink-0 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Elegir plan
+            </Link>
+          </div>
+        )}
+        <div className="flex-1 p-8">
+          {children}
+        </div>
       </main>
 
       <GlobalSearch />

@@ -169,6 +169,10 @@ export default function Register() {
                   {loading ? 'Creando cuenta...' : 'Crear cuenta gratis'}
                 </button>
 
+                <p className="text-center text-xs text-emerald-400 font-medium">
+                  ✓ 14 días de prueba gratis con todas las funciones — sin tarjeta
+                </p>
+
                 <p className="text-center text-xs text-zinc-600 leading-relaxed">
                   Al crear tu cuenta aceptas los{' '}
                   <Link to="/terminos" className="text-zinc-400 hover:text-white hover:underline transition-colors">Términos de servicio</Link>{' '}

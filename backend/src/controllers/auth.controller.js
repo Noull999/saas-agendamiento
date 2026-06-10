@@ -77,7 +77,7 @@ const register = async (req, res) => {
 
     res.status(201).json({
       token,
-      business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan, vertical: business.vertical, specialty: business.specialty },
+      business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan, vertical: business.vertical, specialty: business.specialty, subscription_status: business.subscription_status, trial_ends_at: business.trial_ends_at },
     });
   } catch (err) {
     console.error('[auth] register error:', err.message);
@@ -108,7 +108,7 @@ const login = async (req, res) => {
     const token = generateToken(business);
     res.json({
       token,
-      business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan, vertical: business.vertical || 'salud', specialty: business.specialty || 'general' },
+      business: { id: business.id, name: business.name, slug: business.slug, plan: business.plan, vertical: business.vertical || 'salud', specialty: business.specialty || 'general', subscription_status: business.subscription_status, trial_ends_at: business.trial_ends_at },
     });
   } catch (err) {
     console.error('[auth] login error:', err.message);
@@ -119,11 +119,12 @@ const login = async (req, res) => {
 const me = async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT id, slug, name, owner_email, phone, plan, vertical, specialty, created_at FROM businesses WHERE id = $1',
+      'SELECT id, slug, name, owner_email, phone, plan, vertical, specialty, subscription_status, trial_ends_at, created_at FROM businesses WHERE id = $1',
       [req.business.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Negocio no encontrado' });
-    res.json(rows[0]);
+    // plan efectivo calculado por el middleware (trial activo = acceso business)
+    res.json({ ...rows[0], plan: req.business.plan });
   } catch (err) {
     console.error('[auth] me error:', err.message);
     res.status(500).json({ error: 'Error interno del servidor' });

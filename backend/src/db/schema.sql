@@ -236,3 +236,8 @@ CREATE TABLE IF NOT EXISTS api_keys (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
+
+-- ── Suscripciones (trial + Mercado Pago preapproval) ─────────────────────────
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '14 days');
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'trial'; -- trial | active | cancelled
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS mp_preapproval_id TEXT;

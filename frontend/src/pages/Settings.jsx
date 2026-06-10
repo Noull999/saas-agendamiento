@@ -34,6 +34,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [plans, setPlans] = useState([]);
+  const [now] = useState(() => Date.now());
   const [upgrading, setUpgrading] = useState(null);
   const [templates, setTemplates] = useState(null);
   const [savingTemplate, setSavingTemplate] = useState(null);
@@ -108,6 +109,30 @@ export default function Settings() {
       params.delete('google');
       const qs = params.toString();
       window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    }
+
+    // Vuelta del checkout de suscripción de Mercado Pago
+    const preapprovalId = params.get('preapproval_id');
+    if (preapprovalId) {
+      setActiveTab('plan');
+      api.post('/billing/confirm', { preapproval_id: preapprovalId })
+        .then(({ data }) => {
+          toast.success(`¡Suscripción activada! Ya tienes el plan ${data.plan}.`);
+          updateBusiness({ plan: data.plan, subscription_status: 'active' });
+        })
+        .catch((err) => {
+          toast.error(err.response?.data?.error || 'No se pudo confirmar la suscripción');
+        })
+        .finally(() => {
+          window.history.replaceState({}, '', window.location.pathname);
+        });
+    }
+
+    // Redirigido aquí porque venció la prueba (interceptor 402)
+    if (params.get('expired')) {
+      setActiveTab('plan');
+      toast.error('Tu período de prueba terminó. Contrata un plan para seguir usando la plataforma.');
+      window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
@@ -388,16 +413,56 @@ export default function Settings() {
       )}
 
       {/* ── TAB: PLAN ── */}
-      {activeTab === 'plan' && (
+      {activeTab === 'plan' && (() => {
+        const isSubscribed = business?.subscription_status === 'active';
+        const isTrial = business?.subscription_status === 'trial';
+        const trialDaysLeft = business?.trial_ends_at
+          ? Math.max(0, Math.ceil((new Date(business.trial_ends_at) - now) / 86400000))
+          : null;
+        const trialExpired = isTrial && trialDaysLeft === 0;
+
+        return (
         <div className="space-y-4">
+          {/* Banner estado de suscripción */}
+          {isTrial && !trialExpired && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center gap-3">
+              <span className="text-2xl">🎁</span>
+              <div>
+                <p className="text-amber-300 text-sm font-semibold">
+                  Período de prueba gratis — {trialDaysLeft === 1 ? 'queda 1 día' : `quedan ${trialDaysLeft} días`}
+                </p>
+                <p className="text-zinc-400 text-xs mt-0.5">
+                  Tienes acceso a todas las funciones. Contrata un plan antes de que termine para no perder acceso.
+                </p>
+              </div>
+            </div>
+          )}
+          {(trialExpired || business?.subscription_status === 'cancelled') && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <p className="text-red-300 text-sm font-semibold">
+                  {trialExpired ? 'Tu período de prueba terminó' : 'Tu suscripción está cancelada'}
+                </p>
+                <p className="text-zinc-400 text-xs mt-0.5">
+                  Contrata un plan para recuperar el acceso a tu agenda y tus datos. No se ha borrado nada.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-            <h2 className="text-base font-semibold text-white mb-1">Tu plan actual</h2>
+            <h2 className="text-base font-semibold text-white mb-1">
+              {isSubscribed ? 'Tu plan actual' : 'Elige tu plan'}
+            </h2>
             <p className="text-zinc-400 text-xs mb-4">
-              Actualiza tu plan para desbloquear más funciones.
+              {isSubscribed
+                ? 'Actualiza tu plan para desbloquear más funciones.'
+                : 'Suscripción mensual con Mercado Pago. Puedes cancelar cuando quieras.'}
             </p>
             <div className="space-y-4">
               {plans.map((plan) => {
-                const isCurrent = plan.id === (business?.plan || 'basic');
+                const isCurrent = isSubscribed && plan.id === (business?.plan || 'basic');
                 const planIdx = PLAN_ORDER.indexOf(plan.id);
                 const isUpgrade = planIdx > currentPlanIdx;
                 const isDowngrade = planIdx < currentPlanIdx;
@@ -442,6 +507,14 @@ export default function Settings() {
                       <div className="shrink-0 pt-1">
                         {isCurrent ? (
                           <span className="text-sm text-zinc-500 font-medium">Activo</span>
+                        ) : !isSubscribed ? (
+                          <button
+                            onClick={() => handleUpgrade(plan.id)}
+                            disabled={upgrading === plan.id}
+                            className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
+                          >
+                            {upgrading === plan.id ? 'Redirigiendo...' : 'Contratar →'}
+                          </button>
                         ) : isUpgrade ? (
                           <button
                             onClick={() => handleUpgrade(plan.id)}
@@ -461,7 +534,8 @@ export default function Settings() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── TAB: MENSAJES ── */}
       {activeTab === 'mensajes' && templates && (() => {

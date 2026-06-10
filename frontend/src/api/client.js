@@ -20,6 +20,10 @@ api.interceptors.response.use(
         window.location.href = '/';
       }, 100);
     }
+    // 402 = período de prueba vencido o suscripción cancelada → ir a contratar plan
+    if (err.response?.status === 402 && !window.location.pathname.includes('/dashboard/configuracion')) {
+      window.location.href = '/dashboard/configuracion?expired=1';
+    }
     return Promise.reject(err);
   }
 );
