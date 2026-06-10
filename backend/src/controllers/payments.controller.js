@@ -26,29 +26,34 @@ async function resolveToken(businessId) {
 
 // POST /api/payments/preference   (public — called from booking page without JWT)
 const createPreference = async (req, res) => {
-  const { booking_id, service_id, amount, client_email, client_name } = req.body;
+  const { booking_id, client_email, client_name } = req.body;
 
-  if (!amount || Number(amount) <= 0) {
-    return res.status(400).json({ error: 'Monto inválido' });
+  if (!booking_id) {
+    return res.status(400).json({ error: 'Se requiere booking_id' });
   }
 
   try {
-    // Resolve business_id: from JWT (dashboard) or from booking_id (public page)
-    let businessId = req.business?.id || null;
-    let bizSlug = null;
+    // Resolve business + service desde la reserva en la DB. NUNCA confiar en el
+    // monto que envía el cliente: el precio se deriva del servicio en el servidor
+    // para evitar manipulación (p.ej. pagar $1 por un servicio de $30.000).
+    const { rows } = await db.query(
+      `SELECT b.business_id, b.service_id, biz.slug,
+              s.name AS service_name, s.price AS service_price
+         FROM bookings b
+         JOIN businesses biz ON biz.id = b.business_id
+         LEFT JOIN services s ON s.id = b.service_id AND s.business_id = b.business_id
+        WHERE b.id = $1`,
+      [parseInt(booking_id, 10)]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
 
-    if (!businessId && booking_id) {
-      const { rows } = await db.query(
-        'SELECT b.business_id, biz.slug FROM bookings b JOIN businesses biz ON biz.id = b.business_id WHERE b.id = $1',
-        [booking_id]
-      );
-      if (!rows[0]) return res.status(404).json({ error: 'Reserva no encontrada' });
-      businessId = rows[0].business_id;
-      bizSlug = rows[0].slug;
-    }
+    const businessId = rows[0].business_id;
+    const bizSlug = rows[0].slug || '';
+    const serviceName = rows[0].service_name || 'Reserva';
+    const amount = Number(rows[0].service_price);
 
-    if (!businessId) {
-      return res.status(400).json({ error: 'Se requiere booking_id' });
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Este servicio no tiene un precio configurado para pago online' });
     }
 
     const mpToken = await resolveToken(businessId);
@@ -58,23 +63,6 @@ const createPreference = async (req, res) => {
 
     const mpClient = getMP(mpToken);
     const preference = new Preference(mpClient);
-
-    // Fetch service name
-    let serviceName = 'Consulta';
-    const parsedServiceId = service_id != null ? parseInt(service_id, 10) : null;
-    if (parsedServiceId) {
-      const { rows: svc } = await db.query(
-        'SELECT name FROM services WHERE id = $1 AND business_id = $2',
-        [parsedServiceId, businessId]
-      );
-      if (svc[0]) serviceName = svc[0].name;
-    }
-
-    // Fetch slug if not already resolved
-    if (!bizSlug) {
-      const { rows: biz } = await db.query('SELECT slug FROM businesses WHERE id = $1', [businessId]);
-      bizSlug = biz[0]?.slug || '';
-    }
 
     const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
     const backendBase  = process.env.BACKEND_URL  || 'http://localhost:3001';
