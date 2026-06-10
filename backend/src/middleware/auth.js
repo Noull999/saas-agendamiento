@@ -17,7 +17,7 @@ async function authMiddleware(req, res, next) {
 
   try {
     const { rows } = await db.query(
-      'SELECT id, token_version FROM businesses WHERE id = $1',
+      'SELECT id, token_version, plan FROM businesses WHERE id = $1',
       [payload.id]
     );
     const business = rows[0];
@@ -28,7 +28,9 @@ async function authMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Token inválido o expirado' });
     }
 
-    req.business = payload;
+    // plan se lee siempre de la DB (no del JWT) para que un upgrade
+    // aplique de inmediato sin necesidad de re-login
+    req.business = { ...payload, plan: business.plan || 'basic' };
     next();
   } catch (err) {
     console.error('[auth] DB error:', err.message);

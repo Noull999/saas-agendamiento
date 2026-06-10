@@ -80,7 +80,7 @@ export default function Terms() {
         </p>
         <p>
           El tratamiento de datos personales se rige además por nuestra{' '}
-          <a href="/privacidad" className="text-indigo-600 hover:underline">Política de Privacidad</a>.
+          <a href="/privacidad" className="text-red-400 hover:text-red-300 hover:underline">Política de Privacidad</a>.
         </p>
       </LegalSection>
 
@@ -136,7 +136,7 @@ export default function Terms() {
       <LegalSection n="12" title="Contacto">
         <p>
           Para consultas sobre estos Términos, escríbenos a{' '}
-          <a href={`mailto:${COMPANY.email}`} className="text-indigo-600 hover:underline">{COMPANY.email}</a>.
+          <a href={`mailto:${COMPANY.email}`} className="text-red-400 hover:text-red-300 hover:underline">{COMPANY.email}</a>.
         </p>
       </LegalSection>
     </LegalLayout>

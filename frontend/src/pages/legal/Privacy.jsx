@@ -138,7 +138,7 @@ export default function Privacy() {
           Si eres un cliente/paciente final y deseas ejercer tus derechos, contacta directamente al
           negocio que registró tus datos (el responsable). Si eres un negocio usuario, puedes ejercerlos
           escribiéndonos a{' '}
-          <a href={`mailto:${COMPANY.email}`} className="text-indigo-600 hover:underline">{COMPANY.email}</a>.
+          <a href={`mailto:${COMPANY.email}`} className="text-red-400 hover:text-red-300 hover:underline">{COMPANY.email}</a>.
         </p>
       </LegalSection>
 
@@ -160,7 +160,7 @@ export default function Privacy() {
         <p>
           Responsable: {COMPANY.razonSocial}, {COMPANY.direccion}.<br />
           Correo de contacto:{' '}
-          <a href={`mailto:${COMPANY.email}`} className="text-indigo-600 hover:underline">{COMPANY.email}</a>.
+          <a href={`mailto:${COMPANY.email}`} className="text-red-400 hover:text-red-300 hover:underline">{COMPANY.email}</a>.
         </p>
       </LegalSection>
     </LegalLayout>
