@@ -1,5 +1,6 @@
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 const db = require('../db/database');
+const { verifyMpSignature } = require('../lib/mpSignature');
 
 // Build a MercadoPagoConfig from the given access token
 function getMP(accessToken) {
@@ -123,9 +124,13 @@ const webhook = async (req, res) => {
 
   if (type !== 'payment' || !data?.id) return res.json({ ok: true });
 
+  // Verificar la firma del webhook antes de procesar
+  if (!verifyMpSignature(req, data.id)) {
+    console.warn('[payments] webhook con firma inválida, ignorado');
+    return res.status(401).json({ error: 'Firma inválida' });
+  }
+
   try {
-    // NOTE: In production you should verify the X-Signature header with
-    // MERCADO_PAGO_WEBHOOK_SECRET before trusting this payload.
     // MP only sends the payment id — fetch the payment to get status and
     // external_reference (our booking_id).
     const { Payment } = require('mercadopago');

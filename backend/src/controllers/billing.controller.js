@@ -1,4 +1,5 @@
 const db = require('../db/database');
+const { verifyMpSignature } = require('../lib/mpSignature');
 
 // ── Suscripciones vía Mercado Pago (preapproval) ─────────────────────────────
 // El cobro mensual del SaaS llega a la cuenta MP de la plataforma
@@ -123,6 +124,12 @@ const webhook = async (req, res) => {
 
   if (type !== 'subscription_preapproval' || !data?.id) {
     return res.json({ ok: true });
+  }
+
+  // Verificar la firma del webhook antes de procesar
+  if (!verifyMpSignature(req, data.id)) {
+    console.warn('[billing] webhook con firma inválida, ignorado');
+    return res.status(401).json({ error: 'Firma inválida' });
   }
 
   try {
