@@ -8,21 +8,20 @@ function getMP(accessToken) {
 }
 
 // Resolve the MP access token for the current business.
-// Priority: env var (shared) → business-level setting in business_settings table.
+// Priority: token propio del negocio (los pagos de reservas le llegan a ÉL)
+// → fallback al token de la plataforma (solo para dev / negocio propio).
+// El token de la plataforma se usa para las suscripciones del SaaS en
+// billing.controller, NUNCA debe cobrar las reservas de terceros.
 async function resolveToken(businessId) {
-  if (process.env.MERCADO_PAGO_ACCESS_TOKEN) {
-    return process.env.MERCADO_PAGO_ACCESS_TOKEN;
-  }
   // business_settings table may not exist yet; guard with try/catch
   try {
     const { rows } = await db.query(
       "SELECT value FROM business_settings WHERE business_id = $1 AND key = 'mp_access_token' LIMIT 1",
       [businessId]
     );
-    return rows[0]?.value || null;
-  } catch {
-    return null;
-  }
+    if (rows[0]?.value) return rows[0].value;
+  } catch { /* tabla aún no existe */ }
+  return process.env.MERCADO_PAGO_ACCESS_TOKEN || null;
 }
 
 // POST /api/payments/preference   (public — called from booking page without JWT)

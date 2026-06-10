@@ -156,6 +156,7 @@ const getPlans = (_req, res) => {
         price:    PLAN_PRICES.basic,
         currency: 'CLP',
         features: [
+          'Agenda estándar para cualquier negocio',
           '1 profesional',
           'Hasta 100 reservas/mes',
           'Página de reservas pública',

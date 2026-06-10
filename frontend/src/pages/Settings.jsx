@@ -35,6 +35,7 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [plans, setPlans] = useState([]);
   const [now] = useState(() => Date.now());
+  const [verticalModal, setVerticalModal] = useState(null); // { plan, vertical }
   const [upgrading, setUpgrading] = useState(null);
   const [templates, setTemplates] = useState(null);
   const [savingTemplate, setSavingTemplate] = useState(null);
@@ -183,7 +184,7 @@ export default function Settings() {
     }
   };
 
-  const handleUpgrade = async (planId) => {
+  const startCheckout = async (planId) => {
     setUpgrading(planId);
     try {
       const { data } = await api.post('/billing/checkout', { plan: planId });
@@ -193,6 +194,33 @@ export default function Settings() {
     } finally {
       setUpgrading(null);
     }
+  };
+
+  const handleUpgrade = (planId) => {
+    const isSubscribed = business?.subscription_status === 'active';
+    // Al contratar Pro/Business por primera vez se confirma la especialización
+    // del negocio (salud/belleza/general). Basic es la agenda estándar.
+    if (!isSubscribed && (planId === 'pro' || planId === 'business')) {
+      setVerticalModal({ plan: planId, vertical: business?.vertical || form.vertical || 'salud' });
+      return;
+    }
+    startCheckout(planId);
+  };
+
+  const confirmVerticalAndPay = async () => {
+    const { plan: planId, vertical: chosen } = verticalModal;
+    setVerticalModal(null);
+    if (chosen !== business?.vertical) {
+      try {
+        const { data } = await api.put('/settings', { ...form, vertical: chosen });
+        updateBusiness({ vertical: data.vertical });
+        setForm(f => ({ ...f, vertical: data.vertical }));
+      } catch (err) {
+        toast.error(err.response?.data?.error || 'No se pudo guardar la especialización');
+        return;
+      }
+    }
+    startCheckout(planId);
   };
 
   const saveTemplate = async (type, channel, content) => {
@@ -376,25 +404,21 @@ export default function Settings() {
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Tipo de negocio
                 </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {Object.values(VERTICALS).map(v => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => { setForm(f => ({ ...f, vertical: v.id })); setSaved(false); }}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-center transition-all ${
-                        form.vertical === v.id
-                          ? 'border-red-500 bg-red-500/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
+                {(() => {
+                  const v = VERTICALS[form.vertical] || VERTICALS.salud;
+                  return (
+                    <div className="flex items-center gap-3 p-3 rounded-xl border-2 border-zinc-700 bg-zinc-800/50">
                       <span className="text-2xl">{v.icon}</span>
-                      <p className={`text-xs font-semibold leading-tight ${form.vertical === v.id ? 'text-red-400' : 'text-zinc-300'}`}>
-                        {v.label}
-                      </p>
-                    </button>
-                  ))}
-                </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white">{v.label}</p>
+                        <p className="text-xs text-zinc-500">{v.description}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <p className="text-xs text-zinc-500 mt-2">
+                  El tipo de negocio se define al crear la cuenta. Si necesitas cambiarlo, contáctanos.
+                </p>
               </div>
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <div className="flex items-center gap-4 pt-1">
@@ -533,6 +557,52 @@ export default function Settings() {
               })}
             </div>
           </div>
+          {/* Modal: elegir especialización al contratar Pro/Business */}
+          {verticalModal && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6">
+                <h2 className="text-lg font-bold text-white mb-1">Elige tu especialización</h2>
+                <p className="text-zinc-400 text-xs mb-4">
+                  Tu plan {verticalModal.plan === 'pro' ? 'Pro' : 'Business'} desbloquea módulos
+                  específicos para tu tipo de negocio. Esta elección queda fija.
+                </p>
+                <div className="space-y-2 mb-5">
+                  {Object.values(VERTICALS).map(v => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setVerticalModal(m => ({ ...m, vertical: v.id }))}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                        verticalModal.vertical === v.id
+                          ? 'border-red-500 bg-red-500/10'
+                          : 'border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      <span className="text-2xl">{v.icon}</span>
+                      <div>
+                        <p className={`text-sm font-semibold ${verticalModal.vertical === v.id ? 'text-red-400' : 'text-white'}`}>{v.label}</p>
+                        <p className="text-xs text-zinc-500">{v.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setVerticalModal(null)}
+                    className="flex-1 border border-zinc-700 rounded-xl py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmVerticalAndPay}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors"
+                  >
+                    Continuar al pago →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         );
       })()}
