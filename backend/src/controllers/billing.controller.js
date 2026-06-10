@@ -63,16 +63,31 @@ async function activateFromPreapproval(preapproval, expectedBusinessId = null) {
   return { businessId, plan };
 }
 
-// POST /api/billing/checkout   { plan: 'basic' | 'pro' | 'business' }
+// Versión vigente del Acuerdo de Tratamiento de Datos que el negocio acepta
+// al contratar. Subir este número si cambia el texto del acuerdo.
+const DPA_VERSION = '2026-06-09';
+
+// POST /api/billing/checkout   { plan: 'basic' | 'pro' | 'business', dpa_accepted }
 const createCheckout = async (req, res) => {
-  const { plan } = req.body;
+  const { plan, dpa_accepted } = req.body;
   const price = PLAN_PRICES[plan];
 
   if (!price) {
     return res.status(400).json({ error: 'Plan inválido. Valores aceptados: basic, pro, business' });
   }
 
+  // El negocio debe aceptar el Acuerdo de Tratamiento de Datos para contratar.
+  if (dpa_accepted !== true) {
+    return res.status(400).json({ error: 'Debes aceptar el Acuerdo de Tratamiento de Datos para contratar' });
+  }
+
   try {
+    // Registrar la aceptación del acuerdo (evidencia con fecha y versión)
+    await db.query(
+      'UPDATE businesses SET dpa_accepted_at = NOW(), dpa_version = $1 WHERE id = $2',
+      [DPA_VERSION, req.business.id]
+    );
+
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const preapproval = await mpFetch('/preapproval', {

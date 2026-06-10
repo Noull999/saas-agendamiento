@@ -301,11 +301,15 @@ const publicCreate = async (req, res) => {
       return res.status(409).json({ error: 'Ese horario ya no está disponible' });
     }
 
+    // Consentimiento de tratamiento de datos: si el cliente lo aceptó en el
+    // formulario público, se guarda la marca de tiempo como evidencia.
+    const consentAt = req.body.consent === true ? new Date() : null;
+
     const { rows } = await client.query(`
-      INSERT INTO bookings (business_id, location_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut, cancel_token)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      INSERT INTO bookings (business_id, location_id, service_id, client_name, client_email, client_phone, datetime_iso, notes, source, client_rut, cancel_token, data_consent_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
-    `, [business.id, locationId, serviceId || null, name, email, phone, datetime_iso, notes, source, rut, cancelToken]);
+    `, [business.id, locationId, serviceId || null, name, email, phone, datetime_iso, notes, source, rut, cancelToken, consentAt]);
 
     await client.query('COMMIT');
     const booking = rows[0];

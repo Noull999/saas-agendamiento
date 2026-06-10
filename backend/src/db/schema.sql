@@ -241,3 +241,8 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '14 days');
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'trial'; -- trial | active | cancelled
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS mp_preapproval_id TEXT;
+
+-- ── Consentimiento de datos (cliente) + Acuerdo de Tratamiento (negocio) ─────
+ALTER TABLE bookings   ADD COLUMN IF NOT EXISTS data_consent_at TIMESTAMPTZ;
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS dpa_accepted_at TIMESTAMPTZ;
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS dpa_version TEXT;

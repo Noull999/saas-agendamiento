@@ -35,7 +35,7 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [plans, setPlans] = useState([]);
   const [now] = useState(() => Date.now());
-  const [verticalModal, setVerticalModal] = useState(null); // { plan, vertical }
+  const [contractModal, setContractModal] = useState(null); // { plan, needsVertical, vertical, dpaAccepted }
   const [upgrading, setUpgrading] = useState(null);
   const [templates, setTemplates] = useState(null);
   const [savingTemplate, setSavingTemplate] = useState(null);
@@ -187,7 +187,7 @@ export default function Settings() {
   const startCheckout = async (planId) => {
     setUpgrading(planId);
     try {
-      const { data } = await api.post('/billing/checkout', { plan: planId });
+      const { data } = await api.post('/billing/checkout', { plan: planId, dpa_accepted: true });
       window.location.assign(data.url);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al iniciar el pago');
@@ -198,19 +198,25 @@ export default function Settings() {
 
   const handleUpgrade = (planId) => {
     const isSubscribed = business?.subscription_status === 'active';
-    // Al contratar Pro/Business por primera vez se confirma la especialización
-    // del negocio (salud/belleza/general). Basic es la agenda estándar.
-    if (!isSubscribed && (planId === 'pro' || planId === 'business')) {
-      setVerticalModal({ plan: planId, vertical: business?.vertical || form.vertical || 'salud' });
+    // Si ya está suscrito (cambio entre planes pagos), ya aceptó el acuerdo: va directo.
+    if (isSubscribed) {
+      startCheckout(planId);
       return;
     }
-    startCheckout(planId);
+    // Primera contratación: abre el modal con el Acuerdo de Tratamiento de Datos.
+    // Pro/Business además eligen especialización; Basic es la agenda estándar.
+    setContractModal({
+      plan: planId,
+      needsVertical: planId === 'pro' || planId === 'business',
+      vertical: business?.vertical || form.vertical || 'salud',
+      dpaAccepted: false,
+    });
   };
 
-  const confirmVerticalAndPay = async () => {
-    const { plan: planId, vertical: chosen } = verticalModal;
-    setVerticalModal(null);
-    if (chosen !== business?.vertical) {
+  const confirmContractAndPay = async () => {
+    const { plan: planId, vertical: chosen, needsVertical } = contractModal;
+    setContractModal(null);
+    if (needsVertical && chosen !== business?.vertical) {
       try {
         const { data } = await api.put('/settings', { ...form, vertical: chosen });
         updateBusiness({ vertical: data.vertical });
@@ -557,45 +563,81 @@ export default function Settings() {
               })}
             </div>
           </div>
-          {/* Modal: elegir especialización al contratar Pro/Business */}
-          {verticalModal && (
+          {/* Modal: contratación — especialización + Acuerdo de Tratamiento de Datos */}
+          {contractModal && (
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6">
-                <h2 className="text-lg font-bold text-white mb-1">Elige tu especialización</h2>
-                <p className="text-zinc-400 text-xs mb-4">
-                  Tu plan {verticalModal.plan === 'pro' ? 'Pro' : 'Business'} desbloquea módulos
-                  específicos para tu tipo de negocio. Esta elección queda fija.
-                </p>
-                <div className="space-y-2 mb-5">
-                  {Object.values(VERTICALS).map(v => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => setVerticalModal(m => ({ ...m, vertical: v.id }))}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
-                        verticalModal.vertical === v.id
-                          ? 'border-red-500 bg-red-500/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <span className="text-2xl">{v.icon}</span>
-                      <div>
-                        <p className={`text-sm font-semibold ${verticalModal.vertical === v.id ? 'text-red-400' : 'text-white'}`}>{v.label}</p>
-                        <p className="text-xs text-zinc-500">{v.description}</p>
-                      </div>
-                    </button>
-                  ))}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-auto">
+                <h2 className="text-lg font-bold text-white mb-1">
+                  Contratar plan {contractModal.plan.charAt(0).toUpperCase() + contractModal.plan.slice(1)}
+                </h2>
+
+                {contractModal.needsVertical && (
+                  <>
+                    <p className="text-zinc-400 text-xs mb-3 mt-3">
+                      Tu plan desbloquea módulos específicos para tu tipo de negocio. Esta elección queda fija.
+                    </p>
+                    <div className="space-y-2 mb-5">
+                      {Object.values(VERTICALS).map(v => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setContractModal(m => ({ ...m, vertical: v.id }))}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                            contractModal.vertical === v.id
+                              ? 'border-red-500 bg-red-500/10'
+                              : 'border-zinc-700 hover:border-zinc-600'
+                          }`}
+                        >
+                          <span className="text-2xl">{v.icon}</span>
+                          <div>
+                            <p className={`text-sm font-semibold ${contractModal.vertical === v.id ? 'text-red-400' : 'text-white'}`}>{v.label}</p>
+                            <p className="text-xs text-zinc-500">{v.description}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Acuerdo de Tratamiento de Datos */}
+                <div className="mt-2">
+                  <p className="text-sm font-semibold text-white mb-2">Acuerdo de Tratamiento de Datos</p>
+                  <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-400 leading-relaxed max-h-44 overflow-auto space-y-2">
+                    <p>Al contratar, aceptas que actúas como <strong className="text-zinc-300">responsable</strong> de los datos personales de tus clientes/pacientes, y que AgendaSaaS los procesa en tu nombre como <strong className="text-zinc-300">encargado de tratamiento</strong>. En particular te comprometes a:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>Recopilar y usar los datos solo para prestar tus servicios de agendamiento y atención.</li>
+                      <li>Obtener el consentimiento de cada cliente/paciente antes de registrar sus datos.</li>
+                      <li>Mantener la confidencialidad de la información{contractModal.vertical === 'salud' ? ', especialmente los datos sensibles de salud (fichas, diagnósticos), que se almacenan cifrados' : ''}.</li>
+                      <li>No compartir los datos con terceros sin base legal ni consentimiento.</li>
+                      <li>Atender las solicitudes de acceso, rectificación y eliminación de tus clientes/pacientes.</li>
+                      <li>Cumplir con la legislación chilena de protección de datos personales (Ley 19.628 y la Ley 21.719 cuando entre en vigencia).</li>
+                    </ul>
+                    <p>AgendaSaaS se compromete a aplicar medidas de seguridad razonables (cifrado, control de acceso, respaldos) y a no usar los datos para fines distintos a la prestación del servicio.</p>
+                  </div>
+                  <label className="flex items-start gap-2.5 cursor-pointer mt-3">
+                    <input
+                      type="checkbox"
+                      checked={contractModal.dpaAccepted}
+                      onChange={(e) => setContractModal(m => ({ ...m, dpaAccepted: e.target.checked }))}
+                      className="mt-0.5 w-4 h-4 shrink-0 accent-red-500"
+                    />
+                    <span className="text-xs text-zinc-300">
+                      He leído y acepto el Acuerdo de Tratamiento de Datos. Quedará registrado en el sistema con fecha y versión.
+                    </span>
+                  </label>
                 </div>
-                <div className="flex gap-3">
+
+                <div className="flex gap-3 mt-5">
                   <button
-                    onClick={() => setVerticalModal(null)}
+                    onClick={() => setContractModal(null)}
                     className="flex-1 border border-zinc-700 rounded-xl py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
-                    onClick={confirmVerticalAndPay}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors"
+                    onClick={confirmContractAndPay}
+                    disabled={!contractModal.dpaAccepted}
+                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl py-2.5 text-sm font-semibold transition-colors"
                   >
                     Continuar al pago →
                   </button>

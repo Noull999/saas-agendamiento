@@ -64,6 +64,7 @@ export default function BookingPage() {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [form, setForm] = useState({ client_name: '', client_email: '', client_phone: '', client_rut: '', notes: '' });
+  const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [cancelToken, setCancelToken] = useState(null);
   const [createdBooking, setCreatedBooking] = useState(null);
@@ -122,6 +123,7 @@ export default function BookingPage() {
 
   const handleSubmit = async () => {
     if (!form.client_name) return;
+    if (!consent) { toast.error('Debes aceptar el tratamiento de tus datos para reservar'); return; }
     setSubmitting(true);
     try {
       const datetime_iso = `${selectedDate.toISOString().slice(0, 10)}T${selectedSlot}:00`;
@@ -133,6 +135,7 @@ export default function BookingPage() {
         service_id: selectedService?.id,
         datetime_iso,
         notes: form.notes || undefined,
+        consent: true,
       });
       if (data.cancel_token) setCancelToken(data.cancel_token);
       setCreatedBooking(data);
@@ -510,9 +513,23 @@ export default function BookingPage() {
                       placeholder="Algo que el negocio deba saber..."
                     />
                   </div>
+                  <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 shrink-0 accent-red-500"
+                    />
+                    <span className="text-xs text-zinc-400 leading-relaxed">
+                      Acepto que mis datos personales sean tratados para gestionar mi reserva, según la{' '}
+                      <a href="/privacidad" target="_blank" rel="noreferrer" className="text-red-400 hover:underline">
+                        Política de Privacidad
+                      </a>.
+                    </span>
+                  </label>
                   <button
                     onClick={handleSubmit}
-                    disabled={submitting || !form.client_name || !form.client_phone ||
+                    disabled={submitting || !form.client_name || !form.client_phone || !consent ||
                       (showRut && !isValidRut(form.client_rut))}
                     className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl py-3.5 text-sm font-bold hover:from-red-600 hover:to-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all mt-2 shadow-lg shadow-red-500/20"
                   >
