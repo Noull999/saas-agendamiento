@@ -246,3 +246,12 @@ ALTER TABLE businesses ADD COLUMN IF NOT EXISTS mp_preapproval_id TEXT;
 ALTER TABLE bookings   ADD COLUMN IF NOT EXISTS data_consent_at TIMESTAMPTZ;
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS dpa_accepted_at TIMESTAMPTZ;
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS dpa_version TEXT;
+
+-- ── Sesiones del bot de reservas por WhatsApp ────────────────────────────────
+CREATE TABLE IF NOT EXISTS whatsapp_sessions (
+  phone       TEXT PRIMARY KEY,
+  business_id BIGINT REFERENCES businesses(id) ON DELETE CASCADE,
+  step        TEXT NOT NULL DEFAULT 'start',
+  data        JSONB NOT NULL DEFAULT '{}',
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

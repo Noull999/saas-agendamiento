@@ -389,6 +389,21 @@ export default function BookingPage() {
                     </button>
                   ))}
                 </div>
+
+                {business?.whatsapp_booking && (
+                  <div className="mt-5 pt-5 border-t border-zinc-800">
+                    <p className="text-zinc-500 text-xs mb-2 text-center">¿Prefieres reservar por chat?</p>
+                    <a
+                      href={`https://wa.me/${business.whatsapp_booking.number}?text=${encodeURIComponent(`Hola, quiero reservar 👉 código: ${business.whatsapp_booking.code}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-[#25D366]/10 border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/20 font-medium text-sm transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.472 2 2 6.471 2 11.988c0 1.776.465 3.442 1.27 4.89L2 22l5.265-1.256A9.966 9.966 0 0011.99 22C17.51 22 22 17.529 22 12.012 22 6.495 17.51 2 11.99 2z"/></svg>
+                      Reservar por WhatsApp
+                    </a>
+                  </div>
+                )}
               </div>
             )}
 

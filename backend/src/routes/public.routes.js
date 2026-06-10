@@ -17,11 +17,18 @@ function safeParseSlots(raw) {
 router.get('/:slug', async (req, res) => {
   try {
     const { rows: bizRows } = await db.query(
-      'SELECT id, slug, name, phone, specialty, vertical FROM businesses WHERE slug = $1',
+      'SELECT id, slug, name, phone, specialty, vertical, plan FROM businesses WHERE slug = $1',
       [req.params.slug]
     );
     const business = bizRows[0];
     if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
+
+    // Reserva por WhatsApp: disponible en planes Pro/Business si la plataforma
+    // tiene configurado el número de Twilio. El front arma el deep link wa.me.
+    const waNumber = process.env.TWILIO_WHATSAPP_FROM || null;
+    const whatsappBooking = waNumber && ['pro', 'business'].includes(business.plan)
+      ? { number: waNumber.replace(/[^0-9]/g, ''), code: business.slug }
+      : null;
 
     const { rows: services } = await db.query(
       'SELECT id, name, description, duration_min, price FROM services WHERE business_id = $1 AND active = 1',
@@ -45,7 +52,7 @@ router.get('/:slug', async (req, res) => {
       mpEnabled = mpRows[0]?.value === '1';
     } catch { /* business_settings table may not exist yet */ }
 
-    res.json({ business: { ...business, mp_enabled: mpEnabled }, services, schedules });
+    res.json({ business: { ...business, mp_enabled: mpEnabled, whatsapp_booking: whatsappBooking }, services, schedules });
   } catch (err) {
     console.error('[public] profile error:', err.message);
     res.status(500).json({ error: 'Error interno del servidor' });

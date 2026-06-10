@@ -105,6 +105,8 @@ app.use('/api/locations', require('./routes/locations.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));
 app.use('/api/payments', require('./routes/payments.routes'));
 app.use('/api/integrations', require('./routes/integrations.routes'));
+// Bot conversacional de reservas por WhatsApp (webhook entrante de Twilio)
+app.use('/api/whatsapp', require('./routes/whatsapp.routes'));
 app.use('/api/v1', require('./routes/v1.routes'));
 app.use('/api/api-keys', require('./routes/apiKeys.routes'));
 
