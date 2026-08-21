@@ -286,7 +286,7 @@ export default function LandingPage() {
             <Link to="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
               Iniciar sesión
             </Link>
-            <Link to="/register" className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg transition-colors font-medium">
+            <Link to="/register" data-track="header-empezar-gratis" className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg transition-colors font-medium">
               Empezar gratis →
             </Link>
           </div>
@@ -317,7 +317,7 @@ export default function LandingPage() {
               </h1>
               <p className="text-xl text-zinc-400 max-w-xl mx-auto mb-8 leading-relaxed">{v.subline}</p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link to="/register" className={`${v.ctaBtnClass} px-8 py-3.5 rounded-xl text-sm font-semibold transition-colors shadow-lg`}>
+                <Link to="/register" data-track="hero-prueba-gratis" className={`${v.ctaBtnClass} px-8 py-3.5 rounded-xl text-sm font-semibold transition-colors shadow-lg`}>
                   Prueba gratis 14 días →
                 </Link>
                 <a href="#features" className="text-sm text-zinc-500 hover:text-white transition-colors">
