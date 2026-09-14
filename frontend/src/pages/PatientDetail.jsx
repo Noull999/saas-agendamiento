@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { FileDown } from 'lucide-react';
 import api from '../api/client';
 
 export default function PatientDetail() {
@@ -124,7 +125,8 @@ export default function PatientDetail() {
               onClick={() => window.open(`/api/reports/patient/${patient.id}`, '_blank')}
               className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 px-3 py-1.5 rounded-xl text-sm transition-colors"
             >
-              📄 Historial PDF
+              <FileDown size={15} strokeWidth={2} />
+              Historial PDF
             </button>
             <button onClick={() => setEditing(!editing)} className="text-sm text-red-400 hover:underline">
               {editing ? 'Cancelar' : 'Editar datos'}

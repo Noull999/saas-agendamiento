@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { User, Check } from 'lucide-react';
 import api from '../api/client';
 import { isValidRut } from '../utils/rut';
 import { SkeletonTable } from '../components/Skeleton';
@@ -86,7 +87,7 @@ export default function Patients() {
 
       {!loading && data.patients.length === 0 && (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
-          <p className="text-4xl mb-3">👤</p>
+          <User size={40} className="text-zinc-600 mx-auto mb-3" strokeWidth={1.5} />
           <p className="text-zinc-400 text-sm">No hay pacientes registrados</p>
         </div>
       )}
@@ -148,7 +149,11 @@ export default function Patients() {
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
                   RUT *{' '}
-                  {rutStatus === 'valid' && <span className="text-emerald-400 font-normal">✓ válido</span>}
+                  {rutStatus === 'valid' && (
+                    <span className="text-emerald-400 font-normal inline-flex items-center gap-1">
+                      <Check size={12} strokeWidth={2.5} /> válido
+                    </span>
+                  )}
                   {rutStatus === 'invalid' && <span className="text-red-400 font-normal">inválido</span>}
                 </label>
                 <input

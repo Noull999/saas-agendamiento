@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { CalendarDays, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -30,7 +31,9 @@ export default function Login() {
     <div className="min-h-screen flex bg-black">
       {/* Left panel: brand */}
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black flex-col items-center justify-center p-12 text-white border-r border-zinc-800">
-        <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-2xl shadow-red-500/30">📅</div>
+        <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-red-500/30">
+          <CalendarDays size={30} className="text-white" strokeWidth={2} />
+        </div>
         <h1 className="text-4xl font-bold mb-3 tracking-tight">AgendaSaaS</h1>
         <p className="text-zinc-400 text-center max-w-xs mb-12">
           Gestiona tus reservas, servicios y horarios desde un solo lugar.
@@ -38,7 +41,9 @@ export default function Login() {
         <div className="space-y-4 w-full max-w-xs">
           {['Reservas en línea 24/7', 'Notificaciones por WhatsApp', 'Panel de control completo'].map(f => (
             <div key={f} className="flex items-center gap-3 text-sm text-zinc-300">
-              <div className="w-5 h-5 bg-red-500/20 border border-red-500/40 rounded-full flex items-center justify-center text-xs text-red-400">✓</div>
+              <div className="w-5 h-5 bg-red-500/20 border border-red-500/40 rounded-full flex items-center justify-center text-red-400">
+                <Check size={12} strokeWidth={2.5} />
+              </div>
               {f}
             </div>
           ))}
@@ -49,7 +54,9 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-8 bg-black">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white text-sm shadow-lg shadow-red-500/30">📅</div>
+            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/30">
+              <CalendarDays size={16} className="text-white" strokeWidth={2} />
+            </div>
             <span className="font-bold text-white">AgendaSaaS</span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bienvenido de vuelta</h2>

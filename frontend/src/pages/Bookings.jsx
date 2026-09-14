@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link2, Inbox, UserRound } from 'lucide-react';
 import api from '../api/client';
 import { isValidRut } from '../utils/rut';
 import { useToast } from '../context/ToastContext';
@@ -406,7 +407,9 @@ export default function Bookings() {
         const bookingUrl = `${window.location.origin}/book/${business.slug.trim()}`;
         return (
           <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm mb-6">
-            <span className="text-zinc-400 shrink-0">🔗 Tu página:</span>
+            <span className="text-zinc-400 shrink-0 flex items-center gap-1.5">
+              <Link2 size={14} strokeWidth={2} /> Tu página:
+            </span>
             <span className="flex-1 text-zinc-300 font-mono text-xs truncate">{bookingUrl}</span>
             <button
               onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success('Link copiado'); }}
@@ -459,7 +462,7 @@ export default function Bookings() {
 
       {!loading && bookings.length === 0 && (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
-          <p className="text-4xl mb-3">📭</p>
+          <Inbox size={40} className="text-zinc-600 mx-auto mb-3" strokeWidth={1.5} />
           <p className="text-zinc-400 text-sm">No hay reservas próximas</p>
         </div>
       )}
@@ -530,9 +533,9 @@ export default function Bookings() {
                         {b.patient_name ? (
                           <button
                             onClick={() => navigate(isSalud ? `/dashboard/pacientes/${b.patient_id}` : '/dashboard/clientes')}
-                            className="text-xs text-red-400 hover:underline"
+                            className="text-xs text-red-400 hover:underline inline-flex items-center gap-1"
                           >
-                            👤 {b.patient_name}
+                            <UserRound size={12} strokeWidth={2} /> {b.patient_name}
                           </button>
                         ) : (
                           <button

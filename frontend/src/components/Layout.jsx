@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { Lock, Zap, Link2, LogOut, Gift } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getVertical, meetsMinPlan } from '../config/verticals.config';
 import GlobalSearch from './GlobalSearch';
@@ -35,7 +36,7 @@ export default function Layout({ children }) {
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
-          {vertical.modules.map(({ to, label, icon, minPlan }) => {
+          {vertical.modules.map(({ to, label, icon: Icon, minPlan }) => {
             const locked = minPlan && !meetsMinPlan(business?.plan, minPlan);
             if (locked) {
               return (
@@ -45,9 +46,9 @@ export default function Layout({ children }) {
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400 transition-colors"
                   title={`Requiere plan ${minPlan}`}
                 >
-                  <span className="opacity-50">{icon}</span>
+                  <Icon className="opacity-50" size={17} strokeWidth={2} />
                   <span className="opacity-50 flex-1">{label}</span>
-                  <span className="text-xs">🔒</span>
+                  <Lock size={13} strokeWidth={2} />
                 </Link>
               );
             }
@@ -62,7 +63,7 @@ export default function Layout({ children }) {
                   }`
                 }
               >
-                <span>{icon}</span>
+                <Icon size={17} strokeWidth={2} />
                 {label}
               </NavLink>
             );
@@ -75,7 +76,8 @@ export default function Layout({ children }) {
               to="/dashboard/configuracion"
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-colors"
             >
-              ⚡ Subir a Pro
+              <Zap size={14} strokeWidth={2} />
+              Subir a Pro
             </Link>
           )}
           {business?.slug && (
@@ -85,7 +87,7 @@ export default function Layout({ children }) {
               rel="noreferrer"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             >
-              <span>🔗</span>
+              <Link2 size={16} strokeWidth={2} />
               Página pública
             </a>
           )}
@@ -93,7 +95,7 @@ export default function Layout({ children }) {
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
           >
-            <span>🚪</span>
+            <LogOut size={16} strokeWidth={2} />
             Cerrar sesión
           </button>
         </div>
@@ -106,8 +108,9 @@ export default function Layout({ children }) {
               ? 'bg-red-500/10 border-red-500/30 text-red-300'
               : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
           }`}>
-            <span>
-              🎁 Prueba gratis: {trialDaysLeft === 0
+            <span className="flex items-center gap-2">
+              <Gift size={15} strokeWidth={2} />
+              Prueba gratis: {trialDaysLeft === 0
                 ? 'termina hoy'
                 : trialDaysLeft === 1 ? 'queda 1 día' : `quedan ${trialDaysLeft} días`}
               {' '}— todas las funciones desbloqueadas

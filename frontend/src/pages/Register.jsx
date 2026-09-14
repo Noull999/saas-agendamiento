@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { CalendarDays, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { VERTICALS } from '../config/verticals.config';
 
@@ -40,8 +41,10 @@ export default function Register() {
     <div className="min-h-screen flex bg-black">
       {/* Left panel */}
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black flex-col items-center justify-center p-12 text-white border-r border-zinc-800">
-        <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-2xl shadow-red-500/30">
-          {selectedVertical ? selectedVertical.icon : '📅'}
+        <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-red-500/30">
+          {selectedVertical
+            ? <selectedVertical.icon size={30} className="text-white" strokeWidth={2} />
+            : <CalendarDays size={30} className="text-white" strokeWidth={2} />}
         </div>
         <h1 className="text-4xl font-bold mb-3 tracking-tight">AgendaSaaS</h1>
         <p className="text-zinc-400 text-center max-w-xs">
@@ -52,7 +55,9 @@ export default function Register() {
         <div className="mt-12 space-y-4 w-full max-w-xs">
           {['Setup en menos de 5 minutos', 'Página de reservas personalizada', 'Sin comisiones por reserva'].map(f => (
             <div key={f} className="flex items-center gap-3 text-sm text-zinc-300">
-              <div className="w-5 h-5 bg-red-500/20 border border-red-500/40 rounded-full flex items-center justify-center text-xs text-red-400">✓</div>
+              <div className="w-5 h-5 bg-red-500/20 border border-red-500/40 rounded-full flex items-center justify-center text-red-400">
+                <Check size={12} strokeWidth={2.5} />
+              </div>
               {f}
             </div>
           ))}
@@ -63,7 +68,9 @@ export default function Register() {
       <div className="flex-1 flex items-center justify-center p-8 bg-black">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white text-sm shadow-lg shadow-red-500/30">📅</div>
+            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/30">
+              <CalendarDays size={16} className="text-white" strokeWidth={2} />
+            </div>
             <span className="font-bold text-white">AgendaSaaS</span>
           </div>
 
@@ -80,14 +87,14 @@ export default function Register() {
                     className="w-full text-left p-5 bg-zinc-900 border-2 border-zinc-800 rounded-2xl hover:border-red-500 hover:bg-zinc-900/70 transition-all group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-zinc-800 group-hover:bg-red-500/20 rounded-xl flex items-center justify-center text-2xl transition-colors shrink-0">
-                        {v.icon}
+                      <div className="w-12 h-12 bg-zinc-800 group-hover:bg-red-500/20 rounded-xl flex items-center justify-center transition-colors shrink-0">
+                        <v.icon size={22} className="text-zinc-300 group-hover:text-red-400 transition-colors" strokeWidth={2} />
                       </div>
                       <div>
                         <p className="font-semibold text-white group-hover:text-red-400 transition-colors">{v.label}</p>
                         <p className="text-zinc-500 text-xs mt-0.5">{v.description}</p>
                       </div>
-                      <div className="ml-auto text-zinc-700 group-hover:text-red-400 transition-colors">→</div>
+                      <ArrowRight size={16} className="ml-auto text-zinc-700 group-hover:text-red-400 transition-colors" />
                     </div>
                   </button>
                 ))}
@@ -106,10 +113,13 @@ export default function Register() {
                 onClick={() => setSelectedVertical(null)}
                 className="flex items-center gap-1 text-sm text-zinc-500 hover:text-white mb-6 transition-colors"
               >
-                ← Cambiar industria
+                <ArrowLeft size={14} strokeWidth={2} />
+                Cambiar industria
               </button>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center justify-center text-xl">{selectedVertical.icon}</div>
+                <div className="w-10 h-10 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center justify-center">
+                  <selectedVertical.icon size={19} className="text-red-400" strokeWidth={2} />
+                </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">Crea tu cuenta</h2>
                   <p className="text-zinc-500 text-xs">{selectedVertical.label}</p>
@@ -169,8 +179,8 @@ export default function Register() {
                   {loading ? 'Creando cuenta...' : 'Crear cuenta gratis'}
                 </button>
 
-                <p className="text-center text-xs text-emerald-400 font-medium">
-                  ✓ 14 días de prueba gratis con todas las funciones — sin tarjeta
+                <p className="text-center text-xs text-emerald-400 font-medium flex items-center justify-center gap-1.5">
+                  <Check size={13} strokeWidth={2.5} /> 14 días de prueba gratis con todas las funciones — sin tarjeta
                 </p>
 
                 <p className="text-center text-xs text-zinc-600 leading-relaxed">

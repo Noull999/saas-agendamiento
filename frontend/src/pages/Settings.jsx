@@ -1,4 +1,9 @@
 import { useEffect, useState } from 'react';
+import {
+  Building2, CreditCard, MessageCircle, Plug, Settings as SettingsIcon,
+  Check, Gift, AlertTriangle, CircleCheckBig, XCircle, Smartphone, Tag, DollarSign,
+  CalendarDays, AlarmClock,
+} from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { VERTICALS } from '../config/verticals.config';
@@ -17,11 +22,11 @@ const PLAN_BORDER = {
 };
 
 const TABS = [
-  { id: 'perfil',         label: 'Mi negocio',    icon: '🏢' },
-  { id: 'plan',           label: 'Plan',           icon: '💳' },
-  { id: 'mensajes',       label: 'Mensajes',       icon: '💬' },
-  { id: 'integraciones',  label: 'Integraciones',  icon: '🔌' },
-  { id: 'avanzado',       label: 'Avanzado',       icon: '⚙️' },
+  { id: 'perfil',         label: 'Mi negocio',    icon: Building2 },
+  { id: 'plan',           label: 'Plan',          icon: CreditCard },
+  { id: 'mensajes',       label: 'Mensajes',      icon: MessageCircle },
+  { id: 'integraciones',  label: 'Integraciones', icon: Plug },
+  { id: 'avanzado',       label: 'Avanzado',      icon: SettingsIcon },
 ];
 
 export default function Settings() {
@@ -325,7 +330,7 @@ export default function Settings() {
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
-            <span>{tab.icon}</span>
+            <tab.icon size={15} strokeWidth={2} />
             <span>{tab.label}</span>
           </button>
         ))}
@@ -414,7 +419,7 @@ export default function Settings() {
                   const v = VERTICALS[form.vertical] || VERTICALS.salud;
                   return (
                     <div className="flex items-center gap-3 p-3 rounded-xl border-2 border-zinc-700 bg-zinc-800/50">
-                      <span className="text-2xl">{v.icon}</span>
+                      <v.icon size={22} className="text-zinc-300" strokeWidth={2} />
                       <div>
                         <p className="text-sm font-semibold text-white">{v.label}</p>
                         <p className="text-xs text-zinc-500">{v.description}</p>
@@ -435,7 +440,11 @@ export default function Settings() {
                 >
                   {saving ? 'Guardando...' : 'Guardar cambios'}
                 </button>
-                {saved && <span className="text-emerald-400 text-sm font-medium">✓ Guardado</span>}
+                {saved && (
+                  <span className="text-emerald-400 text-sm font-medium flex items-center gap-1">
+                    <Check size={14} strokeWidth={2.5} /> Guardado
+                  </span>
+                )}
               </div>
             </form>
           </div>
@@ -456,7 +465,7 @@ export default function Settings() {
           {/* Banner estado de suscripción */}
           {isTrial && !trialExpired && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center gap-3">
-              <span className="text-2xl">🎁</span>
+              <Gift size={22} className="text-amber-400 shrink-0" strokeWidth={2} />
               <div>
                 <p className="text-amber-300 text-sm font-semibold">
                   Período de prueba gratis — {trialDaysLeft === 1 ? 'queda 1 día' : `quedan ${trialDaysLeft} días`}
@@ -469,7 +478,7 @@ export default function Settings() {
           )}
           {(trialExpired || business?.subscription_status === 'cancelled') && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3">
-              <span className="text-2xl">⚠️</span>
+              <AlertTriangle size={22} className="text-red-400 shrink-0" strokeWidth={2} />
               <div>
                 <p className="text-red-300 text-sm font-semibold">
                   {trialExpired ? 'Tu período de prueba terminó' : 'Tu suscripción está cancelada'}
@@ -528,7 +537,7 @@ export default function Settings() {
                         <ul className="mt-3 space-y-1">
                           {plan.features?.map(f => (
                             <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
-                              <span className="text-emerald-400 shrink-0">✓</span>
+                              <Check size={14} className="text-emerald-400 shrink-0" strokeWidth={2.5} />
                               {f}
                             </li>
                           ))}
@@ -588,7 +597,7 @@ export default function Settings() {
                               : 'border-zinc-700 hover:border-zinc-600'
                           }`}
                         >
-                          <span className="text-2xl">{v.icon}</span>
+                          <v.icon size={22} className={contractModal.vertical === v.id ? 'text-red-400' : 'text-zinc-300'} strokeWidth={2} />
                           <div>
                             <p className={`text-sm font-semibold ${contractModal.vertical === v.id ? 'text-red-400' : 'text-white'}`}>{v.label}</p>
                             <p className="text-xs text-zinc-500">{v.description}</p>
@@ -674,22 +683,23 @@ export default function Settings() {
 
         return (
           <div className="space-y-4">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex items-start gap-2.5">
+              <Smartphone size={16} className="text-zinc-400 shrink-0 mt-0.5" strokeWidth={2} />
               <p className="text-zinc-400 text-sm">
-                📱 Escribe aquí lo que recibirán tus clientes por WhatsApp. Si quieres agregar el nombre del cliente o la fecha automáticamente, usa las etiquetas de abajo.
+                Escribe aquí lo que recibirán tus clientes por WhatsApp. Si quieres agregar el nombre del cliente o la fecha automáticamente, usa las etiquetas de abajo.
               </p>
             </div>
 
             {[
-              { key: 'booking_confirmation', icon: '✅', label: 'Cuando alguien reserva', desc: 'El cliente recibe este mensaje al confirmar su hora' },
-              { key: 'reminder',             icon: '⏰', label: 'Recordatorio (24h antes)', desc: 'Se envía automáticamente el día anterior a la cita' },
-              { key: 'cancellation',         icon: '❌', label: 'Cuando se cancela',         desc: 'Se envía cuando se cancela una reserva' },
-            ].map(({ key, icon, label, desc }) => (
+              { key: 'booking_confirmation', icon: CircleCheckBig, label: 'Cuando alguien reserva', desc: 'El cliente recibe este mensaje al confirmar su hora' },
+              { key: 'reminder',             icon: AlarmClock,     label: 'Recordatorio (24h antes)', desc: 'Se envía automáticamente el día anterior a la cita' },
+              { key: 'cancellation',         icon: XCircle,        label: 'Cuando se cancela',         desc: 'Se envía cuando se cancela una reserva' },
+            ].map(({ key, icon: TplIcon, label, desc }) => (
               templates[key] && (
                 <div key={key} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                   {/* Header */}
                   <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-800">
-                    <span className="text-xl">{icon}</span>
+                    <TplIcon size={19} className="text-zinc-400" strokeWidth={2} />
                     <div>
                       <h3 className="text-white font-semibold text-sm">{label}</h3>
                       <p className="text-zinc-500 text-xs">{desc}</p>
@@ -751,7 +761,9 @@ export default function Settings() {
 
                     {/* Variable chips */}
                     <div>
-                      <p className="text-xs text-zinc-500 mb-2">📎 Etiquetas automáticas — cópialas y pégalas en el mensaje:</p>
+                      <p className="text-xs text-zinc-500 mb-2 flex items-center gap-1.5">
+                        <Tag size={12} strokeWidth={2} /> Etiquetas automáticas — cópialas y pégalas en el mensaje:
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {CHIPS.map(c => (
                           <button
@@ -829,7 +841,7 @@ export default function Settings() {
           {/* Mercado Pago */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
             <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">💰</span>
+              <DollarSign size={22} className="text-emerald-400 shrink-0" strokeWidth={2} />
               <div>
                 <h2 className="text-base font-semibold text-white">Mercado Pago</h2>
                 <p className="text-zinc-400 text-xs mt-0.5">
@@ -848,7 +860,9 @@ export default function Settings() {
 
             {mpTokenConfigured && (
               <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2 mb-4">
-                <span className="text-emerald-400 text-sm">✓ Cuenta de Mercado Pago conectada</span>
+                <span className="text-emerald-400 text-sm flex items-center gap-1.5">
+                  <Check size={14} strokeWidth={2.5} /> Cuenta de Mercado Pago conectada
+                </span>
                 <span className="text-zinc-500 text-xs ml-auto">Para cambiarla, ingresa una nueva clave</span>
               </div>
             )}
@@ -896,7 +910,7 @@ export default function Settings() {
           {/* Google Calendar */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
             <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">📅</span>
+              <CalendarDays size={22} className="text-zinc-400 shrink-0" strokeWidth={2} />
               <div>
                 <h2 className="text-base font-semibold text-white">Google Calendar</h2>
                 <p className="text-zinc-400 text-xs mt-0.5">
@@ -923,7 +937,7 @@ export default function Settings() {
             ) : (
               <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span>
+                  <Check size={15} className="text-emerald-400" strokeWidth={2.5} />
                   <span className="text-white text-sm font-medium">Google Calendar conectado</span>
                 </div>
                 <button
@@ -963,7 +977,9 @@ export default function Settings() {
 
             {createdKey && (
               <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4">
-                <p className="text-emerald-400 text-sm font-medium mb-2">✓ Clave creada</p>
+                <p className="text-emerald-400 text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <Check size={14} strokeWidth={2.5} /> Clave creada
+                </p>
                 <p className="text-zinc-300 text-xs font-mono break-all mb-2 select-all bg-zinc-800 rounded-lg px-3 py-2">
                   {createdKey.key}
                 </p>
@@ -981,8 +997,8 @@ export default function Settings() {
                     Cerrar
                   </button>
                 </div>
-                <p className="text-amber-400 text-xs mt-2">
-                  ⚠️ Guarda esta clave ahora — no se puede ver de nuevo después.
+                <p className="text-amber-400 text-xs mt-2 flex items-center gap-1.5">
+                  <AlertTriangle size={13} strokeWidth={2} /> Guarda esta clave ahora — no se puede ver de nuevo después.
                 </p>
               </div>
             )}

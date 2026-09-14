@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import { CalendarDays, Inbox } from 'lucide-react';
 
 const DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const MONTHS_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -50,7 +51,9 @@ export default function MyBookingsPage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-red-500/20 border border-red-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">📅</div>
+          <div className="w-14 h-14 bg-red-500/20 border border-red-500/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <CalendarDays size={26} className="text-red-400" strokeWidth={2} />
+          </div>
           <h1 className="text-2xl font-bold text-white">Mis citas</h1>
           <p className="text-zinc-500 text-sm mt-1">Consulta tus próximas reservas</p>
         </div>
@@ -87,7 +90,7 @@ export default function MyBookingsPage() {
           <div>
             {result.bookings.length === 0 ? (
               <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-10 text-center">
-                <p className="text-3xl mb-2">📭</p>
+                <Inbox size={32} className="text-zinc-600 mx-auto mb-2" strokeWidth={1.5} />
                 <p className="text-zinc-400 text-sm">No tienes citas próximas en <strong className="text-white">{result.business.name}</strong>.</p>
                 <Link
                   to={`/book/${slug}`}

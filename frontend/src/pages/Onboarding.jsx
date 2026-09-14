@@ -83,8 +83,8 @@ export default function Onboarding() {
 
         {/* Cabecera */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-red-600/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">
-            {vertical.icon}
+          <div className="w-12 h-12 bg-red-600/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <vertical.icon size={22} className="text-red-500" strokeWidth={2} />
           </div>
           <h1 className="text-2xl font-bold text-white">¡Bienvenido, {business?.name}!</h1>
           <p className="text-zinc-500 text-sm mt-1">

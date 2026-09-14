@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { CalendarX, CircleCheck, CircleX } from 'lucide-react';
 
 const DAYS_ES   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -60,7 +61,9 @@ export default function CancelBookingPage() {
         {state === 'preview' && booking && (
           <>
             <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-amber-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🗓️</div>
+              <div className="w-14 h-14 bg-amber-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CalendarX size={26} className="text-amber-400" strokeWidth={2} />
+              </div>
               <h1 className="text-xl font-bold text-white">¿Cancelar tu reserva?</h1>
               <p className="text-zinc-400 text-sm mt-1">Esta acción no se puede deshacer</p>
             </div>
@@ -112,7 +115,9 @@ export default function CancelBookingPage() {
         {/* Done */}
         {state === 'done' && (
           <div className="text-center py-4">
-            <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">✅</div>
+            <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CircleCheck size={26} className="text-emerald-400" strokeWidth={2} />
+            </div>
             <h1 className="text-xl font-bold text-white mb-2">Reserva cancelada</h1>
             <p className="text-zinc-400 text-sm">Tu reserva ha sido cancelada exitosamente.</p>
           </div>
@@ -139,7 +144,9 @@ export default function CancelBookingPage() {
         {/* Generic error */}
         {state === 'error' && (
           <div className="text-center py-4">
-            <div className="w-14 h-14 bg-red-500/20 border border-red-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">❌</div>
+            <div className="w-14 h-14 bg-red-500/20 border border-red-500/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CircleX size={26} className="text-red-400" strokeWidth={2} />
+            </div>
             <h1 className="text-xl font-bold text-white mb-2">Enlace inválido</h1>
             <p className="text-zinc-400 text-sm">{errorMsg}</p>
           </div>

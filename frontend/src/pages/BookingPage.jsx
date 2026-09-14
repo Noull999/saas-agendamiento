@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { Check, Clock, CircleCheck, CreditCard, Landmark, Banknote, Smartphone, CalendarDays } from 'lucide-react';
 import { getVertical } from '../config/verticals.config';
 import { isValidRut } from '../utils/rut';
 import { useToast } from '../context/ToastContext';
@@ -37,7 +38,7 @@ function ProgressBar({ step }) {
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
               done || active ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-500'
             }`}>
-              {done ? '✓' : n}
+              {done ? <Check size={14} strokeWidth={2.5} /> : n}
             </div>
             <span className={`text-xs font-medium hidden sm:block ${active ? 'text-white' : 'text-zinc-500'}`}>{label}</span>
             {i < STEP_LABELS.length - 1 && (
@@ -225,7 +226,9 @@ export default function BookingPage() {
               {DAYS[selectedDate.getDay()]} {selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]}
             </p>
             {step >= 4 && selectedSlot && (
-              <p className="text-zinc-400 text-sm mt-1">🕐 {selectedSlot} hrs</p>
+              <p className="text-zinc-400 text-sm mt-1 flex items-center gap-1.5">
+                <Clock size={14} strokeWidth={2} /> {selectedSlot} hrs
+              </p>
             )}
           </div>
         )}
@@ -237,7 +240,9 @@ export default function BookingPage() {
         {/* Step 5: Opción de pago */}
         {step === 5 && (
           <div className="max-w-md mx-auto pt-8">
-            <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-5">✅</div>
+            <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <CircleCheck size={28} className="text-emerald-400" strokeWidth={2} />
+            </div>
             <h2 className="text-2xl font-bold text-white mb-1 text-center">¡Reserva confirmada!</h2>
             <p className="text-zinc-400 mb-6 text-center text-sm">Elige cómo vas a pagar</p>
 
@@ -264,7 +269,7 @@ export default function BookingPage() {
                 className="w-full p-4 bg-blue-600/10 hover:bg-blue-600/20 border-2 border-blue-500/50 hover:border-blue-500 disabled:opacity-50 text-left rounded-2xl transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">💳</span>
+                  <CreditCard size={22} className="text-zinc-300" strokeWidth={2} />
                   <div className="flex-1">
                     <p className="font-semibold text-white text-sm">Pagar ahora con tarjeta</p>
                     <p className="text-zinc-400 text-xs">Tarjeta de crédito o débito · Pago seguro con Mercado Pago</p>
@@ -283,7 +288,7 @@ export default function BookingPage() {
                 className="w-full p-4 bg-zinc-900 hover:bg-zinc-800 border-2 border-zinc-700 hover:border-zinc-600 disabled:opacity-50 text-left rounded-2xl transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">🏧</span>
+                  <Landmark size={22} className="text-zinc-300" strokeWidth={2} />
                   <div>
                     <p className="font-semibold text-white text-sm">Débito o tarjeta en el lugar</p>
                     <p className="text-zinc-400 text-xs">Pagas con tu tarjeta al llegar a tu cita</p>
@@ -298,7 +303,7 @@ export default function BookingPage() {
                 className="w-full p-4 bg-zinc-900 hover:bg-zinc-800 border-2 border-zinc-700 hover:border-zinc-600 disabled:opacity-50 text-left rounded-2xl transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">💵</span>
+                  <Banknote size={22} className="text-zinc-300" strokeWidth={2} />
                   <div>
                     <p className="font-semibold text-white text-sm">Efectivo en el lugar</p>
                     <p className="text-zinc-400 text-xs">Llevas el dinero el día de tu cita</p>
@@ -312,7 +317,9 @@ export default function BookingPage() {
         {/* Step 6: Confirmación */}
         {step === 6 && (
           <div className="max-w-md mx-auto text-center pt-8">
-            <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">✅</div>
+            <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <CircleCheck size={32} className="text-emerald-400" strokeWidth={2} />
+            </div>
             <h2 className="text-2xl font-bold text-white mb-2">¡Reserva confirmada!</h2>
             <p className="text-zinc-400 mb-8">Tu hora ha sido agendada exitosamente en <strong className="text-white">{business.name}</strong>.</p>
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-left text-sm space-y-3 mb-8">
@@ -323,7 +330,8 @@ export default function BookingPage() {
             </div>
             {form.client_phone && (
               <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
-                📱 Te enviaremos la confirmación al WhatsApp {form.client_phone}
+                <Smartphone size={14} className="inline -mt-0.5 mr-1" strokeWidth={2} />
+                Te enviaremos la confirmación al WhatsApp {form.client_phone}
               </p>
             )}
 
@@ -333,7 +341,8 @@ export default function BookingPage() {
                 href={`/book/${slug}/mis-citas`}
                 className="block text-center text-sm bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 text-zinc-300 hover:bg-zinc-800 font-medium transition-colors"
               >
-                📅 Ver mis citas
+                <CalendarDays size={14} className="inline -mt-0.5 mr-1" strokeWidth={2} />
+                Ver mis citas
               </a>
               {cancelToken && (
                 <a
@@ -488,7 +497,7 @@ export default function BookingPage() {
                         RUT *{' '}
                         {form.client_rut.length > 2 && (
                           isValidRut(form.client_rut)
-                            ? <span className="text-emerald-400 font-normal">✓ válido</span>
+                            ? <span className="text-emerald-400 font-normal inline-flex items-center gap-1"><Check size={12} strokeWidth={2.5} /> válido</span>
                             : <span className="text-red-400 font-normal">inválido</span>
                         )}
                       </label>

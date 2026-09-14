@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState } from 'react';
+import { CircleCheck, CircleX, Info, TriangleAlert } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
@@ -42,25 +43,28 @@ const TYPE_STYLES = {
 };
 
 const TYPE_ICONS = {
-  success: '✓',
-  error:   '✕',
-  info:    'ℹ',
-  warning: '⚠',
+  success: CircleCheck,
+  error:   CircleX,
+  info:    Info,
+  warning: TriangleAlert,
 };
 
 function ToastContainer({ toasts }) {
   if (!toasts.length) return null;
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-      {toasts.map(t => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium shadow-xl backdrop-blur-sm max-w-sm ${TYPE_STYLES[t.type]}`}
-        >
-          <span className="shrink-0 font-bold">{TYPE_ICONS[t.type]}</span>
-          <span>{t.message}</span>
-        </div>
-      ))}
+      {toasts.map(t => {
+        const Icon = TYPE_ICONS[t.type];
+        return (
+          <div
+            key={t.id}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium shadow-xl backdrop-blur-sm max-w-sm ${TYPE_STYLES[t.type]}`}
+          >
+            <Icon size={16} className="shrink-0" strokeWidth={2} />
+            <span>{t.message}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

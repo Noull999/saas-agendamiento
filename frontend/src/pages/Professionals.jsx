@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Users, User } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -37,7 +38,7 @@ export default function Professionals() {
   if (!isPro) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="text-5xl mb-4">👥</div>
+        <Users size={44} className="text-zinc-600 mb-4" strokeWidth={1.5} />
         <h2 className="text-xl font-bold text-white mb-2">Disponible en plan Pro</h2>
         <p className="text-zinc-400 text-sm max-w-xs mb-6">Gestiona múltiples profesionales en tu consulta con el plan Pro o Clínica.</p>
         <button className="bg-red-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-700">
@@ -115,7 +116,7 @@ export default function Professionals() {
 
       {!loading && professionals.length === 0 && (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
-          <p className="text-4xl mb-3">👤</p>
+          <User size={40} className="text-zinc-600 mx-auto mb-3" strokeWidth={1.5} />
           <p className="text-zinc-400 text-sm">No hay profesionales registrados</p>
         </div>
       )}
