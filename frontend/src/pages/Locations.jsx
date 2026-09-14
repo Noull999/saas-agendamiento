@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Building2 } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 
@@ -180,7 +181,7 @@ export default function Locations() {
         </div>
       ) : locations.length === 0 ? (
         <div className="text-center py-16 text-zinc-500">
-          <p className="text-4xl mb-3">🏢</p>
+          <Building2 size={40} className="text-zinc-600 mx-auto mb-3" strokeWidth={1.5} />
           <p className="font-medium">Sin sucursales</p>
           <p className="text-sm mt-1">Crea tu primera sucursal para empezar</p>
         </div>

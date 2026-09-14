@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
+import { FileDown } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -133,7 +134,8 @@ export default function Analytics() {
             }}
             className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 px-4 py-2 rounded-xl text-sm transition-colors shadow-md shadow-black/20"
           >
-            📄 Descargar PDF
+            <FileDown size={15} strokeWidth={2} />
+            Descargar PDF
           </button>
         </div>
       </div>

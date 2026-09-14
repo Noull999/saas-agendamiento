@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Stethoscope } from 'lucide-react';
 import api from '../api/client';
 
 export default function Consultations() {
@@ -43,7 +44,7 @@ export default function Consultations() {
 
         {!loading && consultations.length === 0 && (
           <div className="p-16 text-center">
-            <p className="text-4xl mb-3">🩺</p>
+            <Stethoscope size={40} className="text-zinc-600 mx-auto mb-3" strokeWidth={1.5} />
             <p className="text-zinc-400 text-sm">No hay consultas registradas{date ? ' para esta fecha' : ''}</p>
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Wrench } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
@@ -79,7 +80,7 @@ export default function Services() {
         )}
         {!loading && services.length === 0 && (
           <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
-            <p className="text-4xl mb-3">🛠</p>
+            <Wrench size={40} className="text-zinc-600 mx-auto mb-3" strokeWidth={1.5} />
             <p className="text-zinc-400 text-sm">Aún no tienes servicios. Agrega uno.</p>
           </div>
         )}

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const PLAN_ORDER = ['basic', 'pro', 'business'];
@@ -33,8 +34,8 @@ export default function PlanGate({ minPlan, children, feature = 'esta función' 
       </div>
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="bg-zinc-900 rounded-2xl shadow-xl border border-zinc-800 p-8 text-center max-w-sm mx-4">
-          <div className={`w-14 h-14 ${iconBg} rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4`}>
-            🔒
+          <div className={`w-14 h-14 ${iconBg} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+            <Lock size={26} className="text-white" strokeWidth={2} />
           </div>
           <h3 className="text-lg font-bold text-white mb-1">
             Requiere plan {PLAN_LABELS[minPlan]}

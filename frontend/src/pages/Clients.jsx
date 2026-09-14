@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { Users, Scissors } from 'lucide-react';
 import api from '../api/client';
 
 const EMPTY_FORM = { name: '', phone: '', email: '', notes: '' };
@@ -134,7 +135,7 @@ export default function Clients() {
 
       {!loading && data.patients.length === 0 && (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-16 text-center shadow-md shadow-black/20">
-          <p className="text-4xl mb-3">✂️</p>
+          <Users size={40} className="text-zinc-600 mx-auto mb-3" strokeWidth={1.5} />
           <p className="text-zinc-300 font-medium mb-1">Sin clientes registrados</p>
           <p className="text-zinc-500 text-sm">Agrega clientes para llevar registro de sus preferencias y visitas</p>
         </div>
@@ -247,7 +248,9 @@ export default function Clients() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">Preferencias ✂️</label>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <Scissors size={12} strokeWidth={2} /> Preferencias
+                </label>
                 <textarea
                   rows={3}
                   value={form.notes}
@@ -288,8 +291,8 @@ export default function Clients() {
                   {historyClient.phone && <span className="ml-3 text-zinc-400">· {historyClient.phone}</span>}
                 </p>
                 {historyClient.notes && (
-                  <span className="inline-block mt-1.5 text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                    ✂️ {historyClient.notes}
+                  <span className="inline-flex items-center gap-1 mt-1.5 text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                    <Scissors size={11} strokeWidth={2} /> {historyClient.notes}
                   </span>
                 )}
               </div>

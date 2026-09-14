@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { TriangleAlert } from 'lucide-react';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -19,7 +20,7 @@ export default class ErrorBoundary extends Component {
       return (
         <div className="min-h-screen bg-black flex items-center justify-center p-8">
           <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 max-w-md w-full text-center">
-            <div className="text-4xl mb-4">⚠️</div>
+            <TriangleAlert size={36} className="text-amber-400 mx-auto mb-4" strokeWidth={2} />
             <h1 className="text-white text-xl font-semibold mb-2">Algo salió mal</h1>
             <p className="text-zinc-400 text-sm mb-6">
               Ocurrió un error inesperado. Por favor recarga la página.

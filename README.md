@@ -1,6 +1,12 @@
 # SaaS de Agendamiento
 
-Plataforma multi-tenant de agendamiento para negocios de salud (clínicas, consultas, profesionales independientes). Cada negocio tiene su propio slug público (`/book/:slug`) para que sus clientes reserven online, mientras el dueño gestiona servicios, horarios, profesionales, pacientes y pagos desde un panel de administración.
+Plataforma multi-tenant de agendamiento para negocios que atienden con hora — clínicas, salones de belleza, consultorías, profesionales independientes. Cada negocio tiene su propio slug público (`/book/:slug`) para que sus clientes reserven online, mientras el dueño gestiona servicios, horarios, profesionales, pacientes y pagos desde un panel de administración.
+
+![Preview](docs/banner.svg)
+
+**Demo en vivo:** [saas-agendamiento-backend.vercel.app](https://saas-agendamiento-backend.vercel.app) — cuenta de prueba (datos ficticios, no es un negocio real):
+- Email: `demo@agendasaas.cl`
+- Contraseña: `DemoSaaS2026!`
 
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
@@ -36,7 +42,7 @@ Un único backend y una única base de datos sirven a todos los negocios registr
 **Backend:** Node.js, Express, PostgreSQL (Neon) vía `pg`, JWT, bcryptjs, Jest.
 **Frontend:** React 19, React Router 7, Vite, Tailwind CSS 4, Recharts, Axios.
 **Integraciones:** Stripe, MercadoPago, Twilio (SMS/WhatsApp), Nodemailer, Google Calendar API, PDFKit.
-**Deploy:** frontend en Vercel, backend en Railway (proxy `/api` configurado en `vercel.json`).
+**Deploy:** todo en Vercel — el backend Express sirve tanto la API (`/api/*`) como el frontend compilado desde el mismo origen (sin CORS entre ambos), enrutado vía `vercel.json`.
 
 ## Correr en desarrollo
 

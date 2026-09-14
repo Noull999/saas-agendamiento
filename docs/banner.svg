@@ -1,0 +1,21 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="g1" cx="15%" cy="15%" r="55%">
+      <stop offset="0%" stop-color="#dc2626" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g2" cx="88%" cy="90%" r="55%">
+      <stop offset="0%" stop-color="#dc2626" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#09090b"/>
+  <rect width="1200" height="630" fill="url(#g1)"/>
+  <rect width="1200" height="630" fill="url(#g2)"/>
+  <circle cx="94" cy="96" r="7" fill="#dc2626"/>
+  <text x="118" y="103" font-family="Arial, Helvetica, sans-serif" font-size="26" letter-spacing="2" fill="#8a8a92">MULTI-TENANT · RESERVAS ONLINE</text>
+  <text x="80" y="230" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700" fill="#f5f5f7">SaaS de Agendamiento</text>
+  <text x="80" y="278" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="500" fill="#dc2626">Reservas · Pacientes · Profesionales · Pagos</text>
+  <text x="80" y="330" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#a8a8b0">Cada negocio con su propia página pública de reservas — el cliente</text>
+  <text x="80" y="364" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#a8a8b0">elige hora sola, el dueño lo ve todo en un panel.</text>
+</svg>

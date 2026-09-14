@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CalendarDays } from 'lucide-react';
 import api from '../api/client';
 
 export default function ForgotPassword() {
@@ -26,7 +27,9 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex items-center justify-center bg-black p-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white text-sm shadow-lg shadow-red-500/30">📅</div>
+          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/30">
+            <CalendarDays size={16} className="text-white" strokeWidth={2} />
+          </div>
           <span className="font-bold text-white">AgendaSaaS</span>
         </div>
         <h2 className="text-2xl font-bold text-white mb-1">Recuperar contraseña</h2>
