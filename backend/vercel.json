@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "src/index.js", "use": "@vercel/node" },
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "rewrites": [
+    { "source": "/assets/(.*)", "destination": "/public/assets/$1" },
+    { "source": "/favicon.svg", "destination": "/public/favicon.svg" },
+    { "source": "/icons.svg", "destination": "/public/icons.svg" },
+    { "source": "/api/(.*)", "destination": "/src/index.js" },
+    { "source": "/health", "destination": "/src/index.js" },
+    { "source": "/(.*)", "destination": "/public/index.html" }
+  ]
+}
